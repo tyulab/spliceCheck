@@ -1,0 +1,182 @@
+#==============================================================================
+# PolyPhen-2 OPTIONS
+#------------------------------------------------------------------------------
+# This file contains the options to control the output of PolyPhen-2
+#------------------------------------------------------------------------------
+#
+# $LastChangedDate: 2012-02-06 14:21:23 -0500 (Mon, 06 Feb 2012) $
+# $LastChangedRevision: 383 $
+# $LastChangedBy: ivan $
+#
+#==============================================================================
+
+#==============================================================================
+# General
+#------------------------------------------------------------------------------
+# These options enables you to individually switch off parts of PolyPhen-2
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# Taxonomy name of the species being analyzed (reference organism)
+#------------------------------------------------------------------------------
+# Note:         - currently, the only fully supported reference organism is
+#                 'Homo sapiens', common name 'human'. Experimental support
+#                 also available for:
+#                   Mus musculus (mouse)
+#                   Rattus norvegicus/Rattus rattus (rat)
+#                   Canis familiaris (dog)
+#                   Danio rerio (zebrafish)
+#               - tax names are database-specific, use with caution
+#                 The following additional options affect selection of
+#                 homologous sequences for multiple sequence alignments:
+#               - NOPARALOGS discards all paralogous sequences, including those
+#                 of the reference organism
+#               - NOREFORG discards only reference organism sequences
+#               - MULTIHSP allows multiple HSPs from the same protein hit to be
+#                 included in multiple sequence alignment; when set to zero it
+#                 causes only a single higest scoring HSP retained for each
+#                 unique protein. This option only takes effect if USEFULLSEQ
+#                 (see below) is not enabled
+#------------------------------------------------------------------------------
+REFORGANISM     = Homo sapiens
+REFORGCOMMON    = human
+NOPARALOGS      = 0
+NOREFORG        = 0
+MULTIHSP        = 1
+
+#------------------------------------------------------------------------------
+# Check for UniProt annotations
+#------------------------------------------------------------------------------
+# Note:         - these annotations are directly used as prediction criteria
+#               - plus they are also important for 3D distance calculations
+#               - MAP2DBSNPS if set attempts to map substitutions in input
+#                 to the reference IDs of dbSNP SNPs annotated in UniProtKB
+#------------------------------------------------------------------------------
+CALCUNIPROT     = 1
+MAP2DBSNPS      = 1
+
+#------------------------------------------------------------------------------
+# Check for possible Pfam hits
+#------------------------------------------------------------------------------
+FINDPFAM        = 1
+
+#------------------------------------------------------------------------------
+# Calculate nucleotide sequence features: CpG, exon/intron junction distance, etc
+#------------------------------------------------------------------------------
+# Note:         - MAPGENE forces PolyPhen-2 to attempt to find UCSC knownGene
+#                 transcript CDS matching the protein sequence and extract
+#                 codons from it; default is to reverse-translate protein
+#                 sequence to find putative codons.
+#               - BLAT_MIDENT is minimal percentage of sequence identity for
+#                 the transcript CDS hit to be used.
+#------------------------------------------------------------------------------
+MAPGENE         = 1
+BLAT_MIDENT     = 97
+
+#------------------------------------------------------------------------------
+# Create alignment and profile
+#------------------------------------------------------------------------------
+# Note:         - CALCPRF tells PolyPhen-2 to compute PSIC profiles (and
+#                 alignments) if they are not available yet
+#               - PRFPRECOMPONLY forces PolyPhen-2 to only use precomputed
+#                 profiles / alignments and skip all SNPs in input for which
+#                 they are unavailable
+#               - SWAPRESIDUES allows PolyPhen-2 to swap residues AA1 and AA2 in
+#                 the input if and only if it finds that AA2 matches the query
+#                 sequence at a given position, instead of the expected AA1.
+#                 In this case, if SWAPRESIDUES is set, a warning will be
+#                 issued and processing will continue with the residues swapped.
+#                 Otherwise, PolyPhen-2 will skip SNP processing (with an error
+#                 message) if AA1 does not match the query sequence residue.
+#               - REVERSEDIRECTION while default substitution direction is:
+#                        (aa1==query_aa)->aa2
+#                 if REVERSEDIRECTION is set we will be looking instead at:
+#                   aa1->(aa2==query_aa)
+#                 This is sometimes useful for analysing mutations in reference
+#                 organism (e.g., human) lineage
+#               - USEFULLSEQ forces PolyPhen-2 to extract fullsize sequences
+#                 for all proteins found by BLAST search and use them to
+#                 build multiple sequence alignment. Default is to use BLAST
+#                 HSPs in MSA. This option only affects PolyPhen-2 version
+#                 of the alignment pipeline!
+#               - USEBLASTMSA forces using old PolyPhen version 1 of multiple
+#                 alignment pipeline based on pairwise BLAST HSP alignments
+#               - SAVEKNOWN if set, causes alignments, profiles and all other
+#                 newly computed files for known UniProt proteins to be stored
+#                 under the global repository directory pointed to by PRECOMPATH
+#                 option
+#               - MAP2UNIPROT if set, attempts to map user-supplied protein
+#                 sequence to a known UniProt protein, in order to utilize
+#                 all available UniProt annotations for the sequence sites
+#               - DIEONBLASTERROR forces PolyPhen-2 to terminate when a fatal
+#                 BLAST error is encountered
+#               - DIEONCLUSPACKERROR forces PolyPhen-2 to terminate when a fatal
+#                 CLUSPACK error is encountered
+#               - MINPSICHITLEN is a minimal length of hit sequence in BLAST
+#                 (when the query protein sequence is < MINPSICHITLEN the hit
+#                 needs to be at least 75% long)
+#               - BLAST_EVALUE is an expectation value (E) threshold for BLAST
+#                 searches in non-redundant protein sequence database
+#               - SUBSTSCORES enables calculation of several additional
+#                 substitution scores other than PSIC
+#------------------------------------------------------------------------------
+CALCPRF             = 1
+PRFPRECOMPONLY      = 0
+SWAPRESIDUES        = 1
+REVERSEDIRECTION    = 0
+USEFULLSEQ          = 0
+USEBLASTMSA         = 0
+SAVEKNOWN           = 0
+MAP2UNIPROT         = 1
+DIEONBLASTERROR     = 1
+DIEONCLUSPACKERROR  = 1
+MINPSICHITLEN       = 50
+MSA_MINPSICHITIDE   = 0.10
+MSA_MAXPSICHITIDE   = 0.94
+BLAST_MINPSICHITIDE = 0.30
+BLAST_MAXPSICHITIDE = 0.94
+BLAST_EVALUE        = 1e-3
+SUBSTSCORES         = 1
+ALNSCORES           = 0
+
+#------------------------------------------------------------------------------
+# Do the structural part of PolyPhen-2
+#------------------------------------------------------------------------------
+# Note:         - PRECOMPONLY3D forces PolyPhen-2 to only use precomputed BLAST
+#                 search results vs. structural database
+#               - STRUCTALLHITS forces the analysis of all found structures
+#                 for B-factors & secondary structure
+#                 (otherwise only the first hit will be analyzed)
+#               - CALCHBONDS enables calculation of H-bonds
+#               - CONTALLHITS enables calculation of contacts for all hits
+#                 (otherwise only the first hit will be analyzed)
+#                 Note: this option has been added since 'dist' is quite slow
+#               - CONTTHRESH threshold (in A) to display contacts
+#               - MIN3DHITLEN, MAX3DHITGAPS, MIN3DHITIDE are parameters for the
+#                 initial BLAST against the structural database
+#               - MAP3D2MISMATCH allows mismatch of query aa and hit aa
+#               - SORTBYIDE defines HSP sorting for 3D BLAST search results
+#------------------------------------------------------------------------------
+CALC3D          = 1
+PRECOMPONLY3D   = 0
+STRUCTALLHITS   = 0
+CALCHBONDS      = 1
+CONTALLHITS     = 0
+CONTTHRESH      = 6
+MIN3DHITLEN     = 100
+MAX3DHITGAPS    = 20
+MIN3DHITIDE     = 0.5
+MAP3D2MISMATCH  = 0
+SORTBYIDE       = 0
+
+#------------------------------------------------------------------------------
+# PolyPhen-2 prediction output options
+#               - XMLOUTPUT if set saves detailed annotations object for each
+#                 input SNP in a file in XML format in the current directory
+#------------------------------------------------------------------------------
+XMLOUTPUT       = 0
+
+#------------------------------------------------------------------------------
+#               Enable built-in SGE & LSF cluster job array mode support
+#------------------------------------------------------------------------------
+GRID_ARRAY      = 1

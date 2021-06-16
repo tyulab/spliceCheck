@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- documentation at http://getbootstrap.com/docs/4.1/, alternative themes at https://bootswatch.com/ -->
+        <link href="https://bootswatch.com/4/journal/bootstrap.min.css" rel="stylesheet">
+
+        <!-- https://favicon.io/emoji-favicons/dna/ -->
+        <link href="/static/favicon.ico" rel="icon">
+
+        <link href="/static/style.css" rel="stylesheet">
+
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+        <script src="/static/javascript.js"></script>
+
+        <title>Splice Check{% block title %}{% endblock %}</title>
+
+    </head>
+
+    <body>
+        <!-- Format navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+          <img src="/static/dna.png" id="logo"
+          style="width:5%;height:5%;"/>
+          <a class="navbar-brand" href="/"><span class = "blue">Splice </span><span class = "purple">Check</span></a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          {% block bar %}
+          <div class="collapse navbar-collapse" id="navbarColor02">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="/">Single Variant Search<span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/list">Variant List Search<span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/about">About<span class="sr-only">(current)</span></a>
+              </li>
+            </ul>
+          </div>
+          {% endblock %}
+        </nav>
+
+        {% if get_flashed_messages() %}
+            <header>
+                <div class="alert alert-primary border text-center" role="alert">
+                    {{ get_flashed_messages() | join(" ") }}
+                </div>
+            </header>
+        {% endif %}
+
+        <!-- Variant submission form -->
+        <main class="container p-5">
+            {% block main %}
+              <!-- Validate that the form is complete -->
+              <form name="varForm" action="/output" onsubmit="return validateForm()" method="post">
+                <fieldset>
+                  <legend><h1>Enter Your Variant of Interest</h1></legend>
+                  <!-- Enter Gene Name -->
+                  <div class="form-group">
+                    <label for="gene"><h4>Gene :  </h4></label>
+                    <input type="text" size = "50" class="form-control" name="gene" placeholder="Official HGNC Gene Symbol, ex. MFSD8 (case sensitive)">
+                  </div>
+                  <!-- Enter cDNA position -->
+                  <div class="form-group">
+                    <label for="position"><h4>cDNA position :  </h4></label>
+                    <input type="text" size ="50" class="form-control" name="position" placeholder="c.1234">
+                  </div>
+                  <!-- Enter cDNA position -->
+                  <div class="form-group">
+                    <label for="transcript"><h4>Transcript ID :  </h4></label>
+                    <input type="text" size ="50" class="form-control" name="transcript" placeholder="Optional, ex. ENST00000639828">
+                  </div>
+                  <div class = "wrapper" style="max-width: 25rem; display: inline-block;">
+                    <!-- Radio buttons for wild type base -->
+                    <div class="form-group" name = "wt" style = "float: left; margin-right: 20px;">
+                      <label for="wt"><h4>WT base :  </h4></label><br>
+                      <input type="radio" name="wt" value="A"> A<br>
+                      <input type="radio" name="wt" value="T"> T<br>
+                      <input type="radio" name="wt" value="C"> C<br>
+                      <input type="radio" name="wt" value="G"> G<br>
+                    </div>
+                    <!-- Radio buttons for mutant base -->
+                    <div class="form-group" name = "mut" style = "float: right; margin-left: 20px;">
+                      <label for="wt"><h4>Mutant base :  </h4></label><br>
+                      <input type="radio" name="mut" value="A"> A<br>
+                      <input type="radio" name="mut" value="T"> T<br>
+                      <input type="radio" name="mut" value="C"> C<br>
+                      <input type="radio" name="mut" value="G"> G<br>
+                    </div>
+                  </div>
+                  <!-- Submit button -->
+                  <button type="submit" class="btn btn-secondary disabled btn-lg btn-block">
+                    Submit
+                  </button>
+                </fieldset>
+              </form>
+            {% endblock %}
+        </main>
+
+        <!-- Website footer -->
+        <footer class="small text-center text-secondary">
+            Tim Yu Lab - Aubrie Soucy, Mike Zhu
+        </footer>
+
+    </body>
+
+</html>

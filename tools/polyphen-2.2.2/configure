@@ -1,0 +1,109 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+#DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+
+=head1 NAME
+
+configure - PolyPhen-2 configuration script
+
+=head1 SYNOPSIS
+
+./configure [options]
+
+Options:
+
+  -config cfg1 [cfg2 ...] - modify configuration; this is the
+                            default if no other options specified
+  -check                  - check configuration
+  -help                   - detailed usage instructions
+
+Where the default list of <cfg> tags is:
+
+  paths databases programs
+
+You can also choose from any other files in config subdirectory
+
+=head1 DESCRIPTION
+
+This script helps to setup Polyphen.
+
+-config - Allows modifying the configuration files,
+          please omit the path and suffix;
+          a backup of the .cnf file will be created
+
+-check -  Checks configured paths to the additional required
+          software and databases
+
+=head1 SUBVERSION
+
+ $LastChangedDate: 2012-09-11 12:31:37 -0400 (Tue, 11 Sep 2012) $
+ $LastChangedRevision: 405 $
+ $LastChangedBy: ivan $
+
+
+=cut
+
+#DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+
+our $VERSION;
+
+use Getopt::Long;
+use Pod::Usage;
+use Term::ANSIColor;
+use File::Copy;
+BEGIN {
+  $VERSION = '2.2.2r405';
+  use FindBin qw($RealBin);
+  BEGIN {
+    $ENV{'PPH'} = $RealBin unless $ENV{'PPH'};
+  }
+  use lib "$ENV{PPH}/perl";
+}
+use PPH::Config;
+
+#PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+use constant DEFAULT_CNF => qw(
+  paths
+  databases
+  programs
+);
+#PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+
+#MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+my ($chk, @cnffiles, $usage);
+my $optrs = GetOptions("check"=>\$chk, "config:s{,}"=>\@cnffiles, "help"=>\$usage);
+pod2usage() unless $optrs;
+
+# GetOptions returns array consisting of single empty string
+# if -config is specified without value(s)
+@cnffiles = DEFAULT_CNF unless @cnffiles && length "@cnffiles";
+
+if ($usage) {
+  pod2usage(-verbose=>2);
+} elsif ($chk) {
+  print color('red'), '-' x 78,
+      "\nChecking preferences\n", '-' x 78, "\n", color('reset');
+  PPH::Config->test_preferences();
+} elsif (@cnffiles) {
+  # Attempt to copy each .cnf.dist file to a corresponding .cnf file
+  # unless the latter is already present in config directory
+  foreach my $distfile (glob "$CONFIG{CNFPATH}/*.cnf.dist") {
+    my $cnffile = $distfile; $cnffile =~ s/\.dist$//;
+    unless (-e $cnffile) {
+      copy($distfile, $cnffile) or die "File copy failed: $!";
+    }
+  }
+  foreach my $cnftag (@cnffiles) {
+    my ($file) = PPH::Config->read_config($cnftag);
+    defined $file or pod2usage(color("red") .
+      "CAN'T FIND CONFIG FILE FOR: $cnftag\n" . color('reset'));
+    print color('red'), '-' x 78,
+      "\nConfiguring preferences for: $cnftag\n", '-' x 78, "\n", color('reset');
+    PPH::Config->set_preferences($file);
+  }
+} else {
+  pod2usage(-verbose=>2);
+}
+#MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM

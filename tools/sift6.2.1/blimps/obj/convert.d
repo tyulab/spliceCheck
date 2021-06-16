@@ -1,0 +1,23 @@
+obj/convert.o: \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/convert.c \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/global.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/license.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/strutil.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/errors.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/memory.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/options.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/blocks.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/output.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/sequences.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/matrix.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/pattern.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/residues.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/blastapp.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/alphabet.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/aabet.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/ntbet.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/gcode.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/frequency.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/protomat.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/convert.h \
+ /home/ubuntu/workspace/final/tools/sift6.2.1/blimps/blimps.h

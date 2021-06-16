@@ -1,0 +1,283 @@
+## This (modified) SIFT version tested on gcc version 4.7.2
+## This SIFT version tested on old legacy BLAST package (blastpgp and formatdb)
+
+This SIFT installation is for
+ - submitting a single protein sequence
+ - submitting a protein alignment
+ - submitting a NCBI gi id.
+
+This SIFT installation is NOT for:
+ - submitting VCF files (please use SIFT 4G)
+ - submitting genomic coordinates of variants (please use SIFT 4G)
+ - SIFT indel prediction  
+Please go to sift-dna.org or sift-dna.org/sift4g to download code for 
+the above functionalities.
+ 
+1. INSTALL NCBI BLAST TOOLS 
+	SIFT uses PSI-BLAST and makeblastdb commands from BLAST+ (This has been tested for 2.4.0).
+
+	Download and install NCBI BLAST 2.4.0+ (or the latest) version at:
+ 
+	     ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/
+
+	SIFT uses NCBI's PSI-BLAST and makeblastdb.  Make sure these programs 
+	are inside your package (otherwise install 2.4.0 which has these 
+	programs).  
+		ls <NCBI_BLAST_DIR>/bin
+
+		makeblastdb
+		psiblast
+
+
+2. Download and format reference protein sequence database 
+	This step is required for SIFT sequence submission. It is optional 
+	if you are inputting a protein alignment or a NCBI gi id.
+
+	SIFT searches a database of protein sequences to find homologous
+        sequences.  You will need to download a database of protein sequences
+        and format it properly so that SIFT subroutines can read it.
+
+	2a. Download a protein database. Some options are:
+
+	    UniRef: 
+		ftp://ftp.ebi.ac.uk/pub/databases/fastafiles/uniref/ 
+
+	    SWISS-PROT/TrEMBL: 
+		ftp://ftp.ebi.ac.uk/pub/databases/fastafiles/uniprot/ 
+
+	    Refseq:
+		ftp://ftp.ncbi.nlm.nih.gov/refseq/release/complete/
+
+
+	    (I personally prefer uniref90.gz) 
+
+	2b. Format your database
+	    SIFT cannot process names of fasta sequences that contain
+	    delimiters such as "|" or ":". Also, it needs the first 10
+	    characters of the sequence name to be unique.  
+	
+	    Format the standard databases so that the sequence names are
+	    simpler.
+
+	    For UniRef, the format command is:
+	    zcat uniref90.gz | perl -pe 's/^>UR090:UniRef90_/>/'  > uniref90.fa
+
+	    For Swiss-Prot or TrEMBL databases, the format command is: 
+	    zcat uniprot_swissprot.gz | perl -pe 's/^>TR:/>/; s/^>SP:/>/' > uniprotkb_swissprot.fa
+
+	    For NCBI:
+            zcat complete.1000.protein.faa.gz |perl -pe 's/^>gi\|/>gi/' | perl -pe 's/\|/ /' > complete.1000.protein.faa
+
+            The names will be changed to the proper format for proper 
+	    parsing.
+
+            If you have your own protein sequence database and SIFT 
+	    is not properly recognizing the names, go to 
+            src/Alignment.c and modify "fix_names"
+            Recompile ALL programs.
+
+	2c.  Format your database:
+		<BLAST_DIR>/bin/makeblastdb -in <protein database fasta> -dbtype prot
+					  	
+3. UNPACK SIFT
+	
+	tar -zxvf sift-<version>.tar.gz
+
+	This will create a directory of the form, sift-<version>.  Change to
+	the directory.
+
+	cd sift-<version>
+
+
+You can SKIP STEPS 4 & 5 if you're using Linux. Linux executables are already in the bin directory. 
+
+4. COMPILE BLIMPS CODE: 
+	Go to the blimps directory:	
+		cd <SIFT_HOME>/blimps	
+	
+	Compile blimps by typing:
+		make clean
+		make all	
+		
+	Folders 'obj','lib' and 'include' will be created. 
+	Check that the blimps library 'libblimps.a' is generated in the 'lib'
+	folder. 
+	If 'libblimps.a' is present, this indicates that BLIMPS has compiled
+	successfully.
+	
+	
+5. COMPILE SIFT CODE:
+	Compile SIFT
+	Set the BLIMPS path in the file cccb (<SIFT_HOME>/src/cccb)
+	
+		cd <SIFT_HOME>/src
+	
+	Edit the file 'cccb'
+	
+		set b = <BLIMPS Home>		
+		set CC = <Path to GCC>	
+
+
+	Compile the SIFT executables.	
+		cd <SIFT_HOME>/src
+		./compile.csh	
+
+		
+	'compile.csh' will generate and move executable to <SIFT_HOME>/bin dirctory.
+	Check <SIFT_HOME>/bin directory for the following executables.
+		choose_seqs_via_psiblastseedmedian
+                clump_output_alignedseq
+                info_on_seqs
+                consensus_to_seq
+                psiblast_res_to_fasta_dbpairwise
+                seqs_from_psiblast_res
+
+                                                                          
+6. SET PATHS 
+
+	Edit the files in <SIFT_HOME>/bin to set environmental variables
+		SIFT_for_submitting_fasta_seq.csh
+		SIFT_for_submitting_NCBI_gi_id.csh
+		
+	# Set NCBI, BLIMPS and SIFT path in file 'SIFT_for_submitting_fasta_seq.csh' (<SIFT_HOME>/bin/SIFT_for_submitting_fasta_seq.csh)
+	
+		setenv NCBI <BLAST directory where psiblast and makeblastdb are>
+			
+		setenv SIFT_DIR <SIFT_HOME>			# Location of SIFT (use SIFT absolute path eg: /home/software/sift)
+			
+		setenv tmpdir = <SIFT_HOME>/tmp			# SIFT's temporary output directory (use sift absolute path eg: /home/software/sift/tmp) 
+
+
+7. RUNNING SIFT
+
+	# Before test/run SIFT program, change working directory to SIFT bin (<SIFT_HOME>/bin) directory and execute below SIFT command (important).
+	# ie, Current working directoy is '<SIFT_HOME>/bin'
+
+	A.  Input: Protein sequence. (SIFT chooses homologues).
+		Requires 3 inputs:
+		1) Protein sequence in fasta format.
+		2) Protein database to search.  These sequences are 
+		   assumed to be functional
+		3) File of substitutions to be predicted on (optional).  
+		   See test/lacI.subst for an example of the format. 
+		   This file is optional. Alternatively, you can print 
+	           scores for the entire protein sequence. 
+
+		Results will be in <tmpdir>/<seq_file>.SIFTprediction
+
+		COMMANDLINE FOR A LIST OF SUBSTITUTIONS:
+		Go to the bin directory <SIFT_HOME>:
+
+			cd <SIFT_HOME>
+
+		Type the commandline: 
+
+			bin/SIFT_for_submitting_fasta_seq.csh <seq file> <protein_database> <file of substitutions> 
+
+		EXAMPLE:
+			bin/SIFT_for_submitting_fasta_seq.csh test/lacI.fasta <protein_database> test/lacI.subst 
+
+		Results will appear in <tmpdir>/lacI.fasta.SIFTprediction. 
+
+		COMMANDLINE TO PRINT ALL SIFT SCORES
+		bin/SIFT_for_submitting_fasta_seq.csh <seq file> <protein_database> - 
+		A dash "-" replaces the list of substitutions.
+
+		Results will appear in <tmp_dir>/<seq file>.SIFTprediction  
+
+	B.	Input: Your own protein alignment (and the path to the environmental variable BLIMPS_DIR, which was set in SIFT.csh).
+
+		COMMANDLINE FORMAT FOR A LIST OF SUBSTITIONS:
+
+		cd <SIFT_DIR>
+		export BLIMPS_DIR=<blimps_path>
+		bin/info_on_seqs <protein alignment> <substitution file> <output file>
+
+		EXAMPLE:
+		Type:
+
+		cd <SIFT_DIR>
+                export BLIMPS_DIR=<blimps_path>
+		bin/info_on_seqs test/lacI.alignedfasta test/lacI.subst test/lacI.fasta.SIFTprediction
+
+		Prediction results will appear in 
+		test/lacI.fasta.SIFTprediction, read above for description 
+		of output.
+
+		COMMANDLINE TO PRINT ALL SIFT SCORES:
+
+		export BLIMPS_DIR=<blimps_path>
+		bin/info_on_seqs <protein alignment> - <output file>
+
+		Example:
+		Type :
+
+		export BLIMPS_DIR=<blimps_path>
+		bin/info_on_seqs test/lacI.alignedfasta - test/lacI.fasta.SIFTprediction
+
+		and scores for each position will appear in the file 
+		test/lacI.fast.SIFTprediction
+
+	C.      Input: BLink gi. 
+		Rather than using BLAST to search for homologous sequences,
+		homologues are retrieved from NCIB BLink. 
+		
+			csh ./SIFT_for_submitting_NCBI_gi_id.csh <gi id> <subst_file> BEST
+
+                1) <gi id> : the NCBI protein gi
+ 
+		   This protein ID is used to look up BLAST hits from NCBI
+                2) File of substitutions to be predicted on (optional).
+                   See test/lacI.subst for an example of the format.
+                   This file is optional. Alternatively, you can print
+                   scores for the entire protein sequence by entering a "-".
+		3) Type of hits to retrieve from BLink (optional).  The two options
+		   are BEST or ALL.  By default,ALL hits are retrived. To get
+	           reciprocal best hits , pass in "BEST".  
+                
+		Results will be stored in the $tmpdir/<gi id>.SIFTprediction
+
+                COMMANDLINE FOR A LIST OF SUBSTITUTIONS:
+                If you are in SIFT_DIR, the commandline is:
+
+                	csh ./SIFT_for_submitting_NCBI_gi_id.csh <gi id> <file of substitutions> <BEST or ALL> 
+
+                EXAMPLE:
+                If you have a list of substitutions, type the following:
+                csh bin/SIFT_for_submitting_NCBI_gi_id.csh 22209009 test/gi22209009.subst BEST 
+
+                Results will appear in $tmpdir/22209009.SIFTprediction
+
+                COMMANDLINE TO PRINT ALL SIFT SCORES
+               	csh bin/SIFT_for_submitting_NCBI_gi_id.csh <gi id> - BEST 
+
+		A dash "-" replaces the substitution file, and BEST is optional.
+                Results will appear in <gi id>.SIFT prediction.
+
+8.  OUTPUT
+	A. When a list of substitutions is submitted (.subst file)
+		Results will appear in <tmpdir>/lacI.fasta.SIFTprediction and
+                look something like:
+
+                K2S     TOLERATED 0.08 3.47 LOW CONFIDENCE
+                P3M     TOLERATED 0.08  3.35 LOW CONFIDENCE
+                V15K    INTOLERANT 0.00 2.84
+
+                According to this output, the SIFT score for K2S is 0.08
+                and the median information of the sequences that have an
+                amino acid represented at the position 2 is 3.47.  If this
+                number exceedes 3.25 the substitution is annotated as
+                having LOW CONFIDENCE (which means too few sequences were
+                represented at that position.)  There are enough sequences for
+                confidence in the V15K prediction.
+
+
+	B. When "-" is used instead of a substitution list, predictions for 
+	   all possible amino acid changes are printed out.
+
+		Results will appear in <tmp_dir>/<seq file>.SIFTprediction
+                Each row is a position
+                in the sequence (row 1 is amino acid position 1, row 2 is
+                amino acid 2) and
+                the SIFT scores for each amino acid substitution are printed for                each row.
+

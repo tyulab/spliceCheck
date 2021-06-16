@@ -1,0 +1,34 @@
+CC = gcc
+CFLAGS = -O3 -Wall -DGCC
+LFLAGS = -s
+
+OBJECTS = DsspCMBI.o p2clib.o Date.o Vector.o AccSurf.o CalcAccSurf.o Contacts.o
+
+install: dsspcmbi
+
+clean:
+	rm -f *.o
+
+dsspcmbi: $(OBJECTS)
+	$(CC) -o $@ $(OBJECTS) $(LFLAGS) -lm
+
+DsspCMBI.o: DsspCMBI.c
+	$(CC) $(CFLAGS) -c DsspCMBI.c
+
+p2clib.o: p2clib.c
+	$(CC) $(CFLAGS) -c p2clib.c
+
+Date.o: Date.c
+	$(CC) $(CFLAGS) -c Date.c
+
+Vector.o: Vector.c
+	$(CC) $(CFLAGS) -c Vector.c
+
+AccSurf.o: AccSurf.c
+	$(CC) $(CFLAGS) -c AccSurf.c
+
+CalcAccSurf.o: CalcAccSurf.c
+	$(CC) $(CFLAGS) -c CalcAccSurf.c
+
+Contacts.o: Contacts.c
+	$(CC) $(CFLAGS) -c Contacts.c

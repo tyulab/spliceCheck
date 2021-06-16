@@ -1,0 +1,57 @@
+#==============================================================================
+# PolyPhen-2 PATHS
+#------------------------------------------------------------------------------
+# This file contains various filesystem paths, e.g., to store computed files,
+# temporary data, and a PolyPhen-2 installation directory.
+#------------------------------------------------------------------------------
+#
+# $LastChangedDate: 2012-02-09 21:38:42 -0500 (Thu, 09 Feb 2012) $
+# $LastChangedRevision: 384 $
+# $LastChangedBy: ivan $
+#
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# PolyPhen-2    Change this to point to the directory where PolyPhen-2 is
+# home          installed
+#------------------------------------------------------------------------------
+PPH             = $ENV{PPH}
+
+#------------------------------------------------------------------------------
+# Scratch       General repository for all files calculated by PolyPhen-2:
+#               BLAST search results, multiple alignments, PSIC profiles, etc.
+#               The directory should exist and should have the following
+#               five subdirectories created inside it:
+#                   alignments
+#                   blastfiles
+#                   profiles
+#                   structures
+#                   lock
+#------------------------------------------------------------------------------
+SCRATCH         = $CONFIG{PPH}/scratch
+
+#------------------------------------------------------------------------------
+# Precomputed   Same as above but for global precomputed files repository.
+#               The directory should exist and should have the following
+#               five subdirectories created inside it:
+#                   alignments
+#                   blastfiles
+#                   profiles
+#                   structures
+#                   lock
+#------------------------------------------------------------------------------
+PRECOMPATH      = $CONFIG{PPH}/precomputed
+
+#------------------------------------------------------------------------------
+# Temp          Path to a temporary directory
+#------------------------------------------------------------------------------
+# Note:         This should point to a local filesystem to reduce network
+#               traffic. Individual subdirectories will be created for
+#               each SNP instance
+#------------------------------------------------------------------------------
+TMP_OUT         = /var/tmp
+
+#------------------------------------------------------------------------------
+#               Adjusted PATH environment variable for SGE & LSF cluster jobs
+#------------------------------------------------------------------------------
+#GRID_PATH       = /bin:/usr/bin:/usr/java/latest/bin:/usr/local/bin:/net/etc:/net/bin/$ARCH

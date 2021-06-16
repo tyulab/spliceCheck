@@ -1,0 +1,502 @@
+$LastChangedDate: 2012-09-11 12:31:37 -0400 (Tue, 11 Sep 2012) $
+$LastChangedRevision: 405 $
+$LastChangedBy: ivan $
+
+
+*** POLYPHEN-2 INSTALLATION INSTRUCTIONS
+
+The following instructions are for Linux operating system but should
+also work on Mac OS X, with minor modifications. Some familiarity
+with the basics of Bash shell and Linux in general are assumed.
+
+In the examples below, all command lines start with a "$" symbol,
+which indicates Bash shell command-line prompt: these "$" symbols
+should be omitted when entering commands into your shell.
+
+NOTE: Windows is currently not supported.
+
+
+** PREREQUISITES
+
+The following software needs to be present in the system before
+attempting to install PolyPhen-2.
+
+* PERL
+
+Perl is required to run PolyPhen-2. Minimal recommended Perl version
+is 5.8.0; 5.14.2 was the latest version successfully tested. To check
+the version of Perl interpreter on your system, execute:
+
+  $ perl -v
+
+The following extra Perl modules should also be present:
+
+  XML::Simple
+  LWP::Simple
+  DBD::SQLite
+
+If you do not have them installed already you can do this by using standard
+software management tools for your system, e.g. (Ubuntu Linux):
+
+  $ sudo apt-get install libxml-simple-perl libwww-perl libdbd-sqlite3-perl
+
+* BUILD TOOLS
+
+Build tools (C/C++ compiler, make, etc) are required during installation in
+order to compile several helper programs from their sources. Tested with
+GCC 4.1.2 (minimal) / GCC 4.9.2. To install build tools in Ubuntu, execute:
+
+  $ sudo apt-get install build-essential
+
+* JAVA
+
+You will also need Java Runtime Environment installed. Ubuntu recommends
+using OpenJDK:
+
+    $ sudo apt-get install openjdk-7-jre
+
+
+** INSTALLATION
+
+NOTE: All download/installed size estimates for the databases listed
+below are for the versions from Dec 2011. Since databases tend to grow
+in size constantly, your mileage may vary slightly. Be prepared to
+have at least 60GB of free disk space available to accommodate a full
+PolyPhen-2 install.
+
+You will also need a fast and reliable Internet connection in order
+to download all of the components and databases required. While it is
+possible to install and use PolyPhen-2 on a computer without an Internet
+connection, such an installation would require substantial extra effort
+and is not discussed in detail herein.
+
+* POLYPHEN-2 SOURCES
+
+Download latest PolyPhen-2 source code here:
+
+  http://genetics.bwh.harvard.edu/pph2/dokuwiki/downloads
+
+Save tarball to a directory of your choice and extract contents, e.g.:
+
+  $ tar vxzf polyphen-2.2.2r405b.tar.gz
+
+This will create PolyPhen-2 installation tree (e.g., polyphen-2.2.2/)
+in the current directory.
+
+* BUNDLED DATABASES
+
+Download all the required sequence & annotation databases, precomputed
+and bundled in a single archive. Save the file to the same directory
+where original PolyPhen-2 tarball was extracted and where your PolyPhen-2
+installation directory was created and extract it:
+
+  $ tar vxjf polyphen-2.2.2-databases-2011_12.tar.bz2
+
+WARNING! - Do *NOT* extract the tarball from inside your PolyPhen-2
+installation directory!
+
+Contents will be placed into proper subdirectories under your PolyPhen-2
+installation tree, so they should be extracted from the same directory
+where your PolyPhen-2 installation directory is located (e.g., your home
+directory).
+
+Download size:  3.7GB
+Installed size: 9.8GB
+
+* PRECOMPUTED ALIGNMENTS
+
+Proceed with downloading and extracting precomputed MAFFT-Leon-Cluspack
+(protein) and MultiZ (genomic whole-exome) multiple sequence alignments
+in the same way:
+
+  $ tar vxjf polyphen-2.2.2-alignments-mlc-2011_12.tar.bz2
+  $ tar vxjf polyphen-2.2.2-alignments-multiz-2009_10.tar.bz2
+
+Once again, these tarballs should be extracted from the directory in
+which your PolyPhen-2 installation directory was created (e.g., from
+your home directory), *NOT* from inside your PolyPhen-2 installation
+directory.
+
+This set of precomputed MLC & MultiZ alignments is optional but highly
+recommended. If you choose not to install them, PolyPhen-2 will attempt
+to build MLC alignments for your proteins automatically on its first
+invocation and consequently use them for all further runs. However,
+building multiple sequence alignments is a highly computationally
+intensive task and may take very long time if you are going to analyze
+variants in more than just a handful of unique protein sequences.
+
+Note also, that the alternative set of precomputed MultiZ CDS
+alignments, based on UCSC Genome Browser MultiZ alignments of
+human vs. vertebrate genomes, are provided as is and cannot be
+re-created by PolyPhen-2. When they are absent, only MLC alignments
+will be used for conservation inference. This reduces coverage for
+PolyPhen-2 predictions significantly since MLC alignments cannot
+be reliably constructed for majority of non-globular protein domains:
+regions with high compositional biases, repeats, etc. PolyPhen-2 would
+not output predictions for sequence sites where no conservation scores
+were available, even when other supporting features are present.
+
+MLC:
+Download size:   2.4GB
+Installed size: 19.0GB
+
+MultiZ:
+Download size:   1.8GB
+Installed size: 11.0GB
+
+* RENAMING/MOVING YOUR INSTALLATION
+
+IMPORTANT! - If you want to rename your PolyPhen-2 installation
+directory or move it to another location, you should do it at this
+point, e.g.:
+
+  $ mv polyphen-2.2.2/ pph2
+
+WARNING! - Never rename or move top PolyPhen-2 directory after all
+the installation steps below have been completed. This will render
+your PolyPhen-2 installation unusable!
+
+Also, you should not alter internal subdirectory structure of your
+PolyPhen-2 installation. However, it is possible to store the
+various databases in locations other than the defaults, if preferred.
+See README file for the discussion of non-standard configuration
+options.
+
+* SETTING UP ENVIRONMENT
+
+Set up shell environment for your PolyPhen-2 installation. If you
+are using Bash shell (Linux default), append two lines to one of
+your ~/.bashrc or ~/.bash_profile files, e.g.:
+
+  $ cat >> ~/.bashrc
+  export PPH=/home/login/pph2
+  export PATH="$PATH:$PPH/bin"
+  <Ctrl-D>
+  $ source ~/.bashrc
+
+Substitute "/home/login/pph2" in the example above with a proper
+path to your PolyPhen-2 installation directory.
+
+Throughout the following text, "$PPH" will be used to denote path to
+your PolyPhen-2 installation directory. With the shell environment
+set up according to these instructions, command examples below should
+work by copying & pasting or typing them at your Bash shell prompt.
+
+* BLAST+
+
+NCBI BLAST+ tools are required; last version tested is 2.2.31.
+
+WARNING! - Avoid BLAST+ v2.2.24 at all costs. Due to a nasty bug in
+this version, makeblastdb command will take an excessively long time
+to format a database (up to several days!). This issue has been fixed
+in BLAST+ v2.2.25.
+
+Precompiled NCBI BLAST+ binary executables for several platforms can
+be downloaded here:
+
+  ftp://ftp.ncbi.nih.gov/blast/executables/LATEST/
+
+BLAST+ binaries need to be installed into $PPH/blast/bin/ folder,
+e.g. (for a 64-bit Linux system):
+
+  $ wget ftp://ftp.ncbi.nih.gov/blast/executables/LATEST/ncbi-blast-2.2.31+-x64-linux.tar.gz
+  $ tar vxzf ncbi-blast-2.2.31+-x64-linux.tar.gz
+  $ mv ncbi-blast-2.2.31+/* $PPH/blast/
+  $ rmdir ncbi-blast-2.2.31+/
+
+For other systems, substitute correct filename for your system's
+architecture for the tar archive name in the example above.
+
+* BLAT (Optional)
+
+Blat tools are necessary in order to analyze variants in novel,
+unannotated or otherwise non-standard genes and proteins. Note that
+PolyPhen-2 uses UCSC hg19 database as the reference source of all gene
+annotations and UniProtKB for protein sequences and annotations. If
+you want to analyze genes/proteins from a different source
+(e.g., RefSeq or Ensembl) this would also require Blat tools.
+
+Instructions for downloading Blat sources and executables can be
+found here:
+
+  http://genome.ucsc.edu/FAQ/FAQblat.html#blat3
+
+Complete set of binary executables is available for 64-bit Linux (x86_64)
+here:
+
+  http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
+
+PolyPhen-2 only needs the following two files:
+
+  blat
+  twoBitToFa
+
+If you are installing on a different architecture, you will need to
+build Blat from sources yourself. Instructions are available via
+the UCSC Genome Browser Help link above.
+
+Once downloaded or compiled, blat and twoBitToFa executables should be
+copied into bin/ folder under your PolyPhen-2 installation tree:
+
+  $ wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/blat/blat
+  $ wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa
+  $ cp blat twoBitToFa $PPH/bin/
+
+Ensure executable bit is set for all downloaded binaries:
+
+  $ chmod +x $PPH/bin/*
+  $ chmod +x $PPH/blast/bin/*
+
+* NON-REDUNDANT SEQUENCE DATABASE
+
+PolyPhen-2 uses UniRef100 non-redundant protein sequence database to
+search for protein homologs, extract homologous sequences and utilize
+them to build multiple sequence alignments. Due to its large size,
+UniRef100 database is not bundled with PolyPhen-2 and needs to be
+ downloaded and installed separately:
+
+  $ cd $PPH/nrdb
+  $ wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/uniref/uniref100/uniref100.fasta.gz
+  $ gunzip uniref100.fasta.gz
+  $ $PPH/update/format_defline.pl uniref100.fasta >uniref100-formatted.fasta
+  $ $PPH/blast/bin/makeblastdb -in uniref100-formatted.fasta -dbtype prot -out uniref100 -parse_seqids
+  $ rm -f uniref100.fasta uniref100-formatted.fasta
+
+WARNING! - Due to a bug in BLAST+ 32-bit Linux binaries, you may
+encounter the following error when makeblastdb command is run on
+a 32-bit system:
+
+  "Unable to open input uniref100-formatted.fasta as either FASTA file or BLAST db".
+
+This is caused by the inability of 32-bit binaries to read files
+larger than 2GB in size. You can prepare your database on another
+64-bit computer, using a 64-bit version of BLAST+, and then copy
+uniref100*.p?? files to $PPH/nrdb/ folder on your 32-bit system.
+Alternatively, a simple workaround is to pipe FASTA file contents
+into standard input of makeblastdb, using "cat" command:
+
+  $ cat uniref100-formatted.fasta | $PPH/blast/bin/makeblastdb -dbtype prot -title "UniRef100" -out uniref100 -parse_seqids
+
+This should work on any system with large file support, which include
+all reasonably recent Linux and Mac OSX versions.
+
+If you decide to use sequence database other than UniRef100, you will
+need to modify "format_defline.pl" script accordingly. Consult the
+following link for description of FASTA definition line formats
+supported by NCBI BLAST+.
+
+  ftp://ftp.ncbi.nih.gov/blast/documents/formatdb.html
+
+Download size:  3.1GB
+Installed size: 8.1GB
+
+* STRUCTURAL DATABASES
+
+The structural databases utilized by PolyPhen-2 are PDB and DSSP.
+Due to their size, the databases are not distributed as part of
+PolyPhen-2 bundled set of databases and need to be downloaded and
+installed separately.
+
+PDB:
+
+Download contents of "divided" subdirectory first (structural data
+files):
+
+  $ rsync -rltv --delete-after --port=33444 \
+      rsync.wwpdb.org::ftp/data/structures/divided/pdb/ $PPH/wwpdb/divided/pdb/
+
+Download contents of "all" subdirectory, these are just symbolic
+links to files in the "divided" subdirectory:
+
+  $ rsync -rltv --delete-after --port=33444 \
+      rsync.wwpdb.org::ftp/data/structures/all/pdb/ $PPH/wwpdb/all/pdb/
+
+NOTE! - Trailing slashes in the paths are important.
+
+RCSB may occasionally change the layout of the PDB directories on their
+ftp site. If you encounter errors while mirroring PDB contents, please
+consult the instructions on RCSB website:
+
+http://www.rcsb.org/pdb/static.do?p=download/ftp/index.html
+
+Download/installed size: 12GB
+
+DSSP:
+
+  $ rsync -rltvz --delete-after rsync://rsync.cmbi.ru.nl/dssp/ $PPH/dssp/
+
+NOTE! - Trailing slashes in the paths are important.
+
+Quote from the DSSP website:
+
+  "Please do these rsync jobs between midnight and 8:00am Dutch time!"
+
+Download/installed size: 6GB
+
+* BUILDING POLYPHEN-2
+
+Change into the source code directory:
+
+  $ cd $PPH/src
+
+Download, build and install all required programs:
+
+  $ make download
+  $ make clean
+  $ make
+  $ make install
+
+NOTE: If automatic downloading of the packages fails for whatever
+reason, you will need to manually (using your web browser or wget
+command) download missing packages via the links below and save them
+to your $PPH/src directory:
+
+  http://mafft.cbrc.jp/alignment/software/mafft-7.221-without-extensions-src.tgz
+  http://prdownloads.sourceforge.net/weka/weka-3-6-12.zip
+
+After the above two downloaded files are saved, repeat the four "make"
+commands listed above, including the first "make download" one, which
+will make use of manually downloaded packages to create required
+directory structure and to apply several PolyPhen-specific patches to
+the sources prior to compilation.
+
+IMPORTANT! - If you omit "make download" step your installation will
+be broken.
+
+* CONFIGURING POLYPHEN-2
+
+Run "configure" script from within the PolyPhen-2 installation
+directory:
+
+  $ cd $PPH
+  $ ./configure
+
+It will let you configure PolyPhen-2 interactively. You can safely
+stick to defaults by pressing <Enter> when prompted with a question
+you do not understand. The purpose of the script is to create a
+reasonable default configuration, which can then be fine-tuned later.
+
+Note, $PPH/config/*.cnf.dist files are for distribution defaults;
+they are used as templates for creating a set of *.cnf files with your
+local configuration. You can always revert back to distribution defaults
+by simply removing all *.cnf files and running "configure" script again.
+
+You can edit *.cnf files inside your $PPH/config directory at any point
+in order to alter specific settings manually. The files are extensively
+commented.
+
+You can also run "configure" script repeatedly to make incremental
+changes to the configuration interactively, if you so prefer.
+
+WARNING! - Renaming executables inside $PPH/bin or moving them to
+locations outside $PPH installation tree will break your installation.
+However, you can safely create symbolic links to PolyPhen-2 executables
+from other directories, e.g.:
+
+  $ ln -s $PPH/bin/run_pph.pl ~/bin/
+  $ ln -s $PPH/bin/run_weka.pl ~/bin/
+
+* TESTING YOUR POLYPHEN-2 INSTALLATION
+
+Run PolyPhen-2 pipeline with the test set of protein variants and
+compare results to the reference output files in $PPH/sets folder:
+
+  $ cd $PPH
+  $ bin/run_pph.pl sets/test.input 1>test.pph.output 2>test.pph.log
+  $ bin/run_weka.pl test.pph.output >test.humdiv.output
+  $ bin/run_weka.pl -l models/HumVar.UniRef100.NBd.f11.model test.pph.output >test.humvar.output
+
+  $ diff test.humdiv.output sets/test.humdiv.output
+  $ diff test.humvar.output sets/test.humvar.output
+
+Check PolyPhen-2 Wiki for detailed description of the output format:
+
+  http://genetics.bwh.harvard.edu/pph2/dokuwiki/appendix_a
+
+Some differences (e.g., in PSIC scores) are expected and normal since
+the exact values depend on the particular versions of databases
+installed.
+
+
+** UPDATING BUILT-IN DATABASES
+
+Updates for PolyPhen-2 built-in protein annotation and sequence
+databases may occasionally be provided via the PolyPhen-2 downloads
+page:
+
+http://genetics.bwh.harvard.edu/pph2/dokuwiki/downloads
+
+These updates are checked for errors and guaranteed to match current
+version of the software. Downloading and installing them by following
+instructions in the * BUNDLED DATABASES section of this document
+is recommended way of updating your installation.
+
+IMPORTANT! - After downloading and installing a new database bundle,
+you should always update your sequence and structural databases, see
+* NON-REDUNDANT SEQUENCE DATABASE and * STRUCTURAL DATABASES sections
+for instructions.
+
+Updating the databases manually is not recommended but possible
+to do with the help of scripts in the $PPH/update/ directory. Note:
+it is important to update all of the databases at the same time
+to ensure all annotations and sequences always stay in sync.
+
+IMPORTANT! - A few of the update steps below will require substantial
+computer resources to complete in reasonable time. A powerful
+multi-CPU workstation or a Linux cluster may be required to run them.
+
+(1) Update your sequence and structural databases following the
+instructions in * NON-REDUNDANT SEQUENCE DATABASE and * STRUCTURAL
+DATABASES sections.
+
+(2) Create a temporary directory and switch into it, e.g.:
+
+  $ mkdir dbupdates
+  $ cd dbupdates
+
+(3) Create & update combined UniProtKB/Pfam sequence/annotation
+databases:
+
+  $ $PPH/update/uniprot.pl
+  $ $PPH/update/unipfam.pl
+  $ mv -f * $PPH/uniprot/
+
+(4) Create & update PDB sequences database:
+
+  $ $PPH/update/pdb2fasta.pl $PPH/wwpdb/all/pdb >pdb2fasta.log 2>&1 &
+  $ mv -f * $PPH/pdb2fasta/
+
+Substitute your local PDB mirror directory path for $PPH/wwpdb if
+different. Note, pdb2fasta.pl script may take several hours to
+complete.
+
+(5) Map UniProtKB protein sequences to the translated CDS sequences
+for all UCSC (hg19) knownGene transcripts (requires blat):
+
+  $ $PPH/update/seqmap.pl $PPH/uniprot/human.seq $PPH/ucsc/hg19/genes/knownGeneAA.seq 1>up2kg.tab 2>up2kg.log &
+  $ $PPH/update/seqmap.pl $PPH/ucsc/hg19/genes/knownGeneAA.seq $PPH/uniprot/human.seq 1>kg2up.tab 2>kg2up.log &
+
+Each command will take up to several days to complete if run on
+a single CPU. Consider using techniques described in * Parallel
+execution support section of README file (seqmap.pl script supports
+both "-r N/M" option and cluster array mode).
+
+(6) Create & update SQLite database with sequence maps:
+
+  $ $PPH/update/map2sqlite.pl up2kg.tab upToKg.sqlite
+  $ $PPH/update/map2sqlite.pl kg2up.tab kgToUp.sqlite
+  $ mv -f upToKg.sqlite kgToUp.sqlite $PPH/ucsc/hg19/genes/
+
+(7) Repeat steps (5) & (6) for the hg18 assembly version if necessary.
+
+
+** FURTHER READING
+
+Please refer to README file for PolyPhen-2 usage and advanced
+configuration instructions.
+
+
+--------------------------------------------------------------
+Author:         Ivan Adzhubey <iadzhubey@rics.bwh.harvard.edu>
+Last modified:  Wed Jul  8 00:45:08 EDT 2015
+--------------------------------------------------------------

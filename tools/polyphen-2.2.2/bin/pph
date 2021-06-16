@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# PolyPhen-2 wrapper script
+
+BINDIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+PPHDIR="${BINDIR%/bin}"
+
+MODELS="
+  $PPHDIR/models/HumDiv.UniRef100.NBd.f11.model
+  $PPHDIR/models/HumVar.UniRef100.NBd.f11.model
+";
+
+# Scan script's command line to determine
+# if we are running in GGI query mode
+unset QUERY_MODE
+for ARG in $@; do
+  if [ "$ARG" = "-h" ]; then
+    "$BINDIR"/run_pph.pl -h
+  fi
+  if [ "$ARG" = "-q" ]; then
+    QUERY_MODE=1
+    if [ -n "$JOB_ID" ]; then
+      QUERY_ID="$JOB_ID"
+    else
+      QUERY_ID=$$
+    fi
+  fi
+done
+
+# Construct filename for the XML dump file
+if [ -n "$QUERY_MODE" ]; then
+  # Note that only a single query is supported in GGI mode
+  PPHXML="$QUERY_ID.xml"
+else
+  # Construct filename based on the SNP ID submitted in the query
+  INFILE="${!#}"
+  INFILE=${INFILE%.*}
+  PPHXML="$INFILE.xml"
+fi
+
+PPHOUT=$(mktemp -t pph2.XXXXXXXXXX)
+"$BINDIR"/run_pph.pl $@ >$PPHOUT || exit
+
+model_no=1
+for MODEL in $MODELS; do
+  MODELNAME=`basename $MODEL .model`
+  WEKAOUT=$(mktemp -t weka.XXXXXXXXXX)
+  "$BINDIR"/run_weka.pl -l $MODEL $PPHOUT >$WEKAOUT || exit
+  n=0
+  while read line; do
+    n=$(( $n + 1 ))
+    # Print out header (once) unless we are in QUERY mode
+    if [ $n -le 1 ]; then
+      if [[ ! "$QUERY_MODE" && $model_no == 1 ]]; then echo "$line"; fi
+      continue
+    fi
+    # Print out WEKA summary line for default model (the first one) unless we are in QUERY mode
+    if [[ ! "$QUERY_MODE" && $model_no == 1 ]]; then echo "$line"; fi
+    # Skip further processing for lines with errors
+    if [[ "$line" =~ $'\tError:' ]]; then continue; fi
+    # Parse WEKA summary line, protecting empty fields, i.e. consecutive <tab>'s from being
+    # swallowed and at the same time trimming all leading and trailing whitespace from values
+    protected_line=$(while read -d $'\t' var; do echo -n "$var"$'\a'; done <<<"$line"$'\t')
+    oIFS="$IFS"; IFS=$'\a'
+    read -r o_acc o_pos o_aa1 o_aa2 rsid acc pos aa1 aa2 nt1 nt2 prediction basedon effect class prob fpr tpr fdr restofit <<<"$protected_line"
+    IFS="$oIFS"
+    # Validate
+    if [ "$class" != none ]; then
+      if [ "$class" != neutral -a "$class" != deleterious ]; then
+        echo "Illegal WEKA class value supplied ($MODELNAME): '$class'" 1>&2
+        exit 1
+      fi
+      if [[ $(echo "$prob" | tr -d '[0-9.]') ]]; then
+        echo "Illegal WEKA probability value supplied ($MODELNAME): $prob" 1>&2
+        exit 1
+      fi
+      if [[ $(echo "$fpr" | tr -d '[0-9.]') ]]; then
+        echo "Illegal WEKA FPR value supplied ($MODELNAME): $fpr" 1>&2
+        exit 1
+      fi
+    fi
+  done <$WEKAOUT
+  # Merge WEKA classification and scores into XML file
+  if [ -e "$PPHXML" ]; then
+    "$BINDIR"/merge_xml.pl -f $WEKAOUT -m $MODELNAME $PPHXML || exit
+  fi
+  /bin/rm -f $WEKAOUT
+  model_no=$(( $model_no + 1 ))
+done
+/bin/rm -f $PPHOUT
+
+# Generate report file in HTML format for the web interface
+if [ -n "$QUERY_MODE" ]; then
+  "$BINDIR"/generate_html.pl ${PWD##*/} $QUERY_ID || exit
+fi

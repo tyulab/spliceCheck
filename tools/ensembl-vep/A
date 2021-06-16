@@ -1,0 +1,35 @@
+## ENSEMBL VARIANT EFFECT PREDICTOR v94.5
+## Output produced at 2018-12-06 18:37:41
+## Connected to homo_sapiens_core_94_38 on ensembldb.ensembl.org
+## Using API version 94, DB version 94
+## ensembl-variation version 94.066b102
+## ensembl version 94.5c08d90
+## ensembl-funcgen version 94.e493cc7
+## ensembl-io version 94.8d53275
+## assembly version GRCh38.p12
+## sift version sift5.2.2
+## gencode version GENCODE 29
+## polyphen version 2.2.2
+## genebuild version 2014-07
+## Column descriptions:
+## Uploaded_variation : Identifier of uploaded variant
+## Location : Location of variant in standard coordinate format (chr:start or chr:start-end)
+## Allele : The variant allele used to calculate the consequence
+## Gene : Stable ID of affected gene
+## Feature : Stable ID of feature
+## Feature_type : Type of feature - Transcript, RegulatoryFeature or MotifFeature
+## Consequence : Consequence type
+## cDNA_position : Relative position of base pair in cDNA sequence
+## CDS_position : Relative position of base pair in coding sequence
+## Protein_position : Relative position of amino acid in protein
+## Amino_acids : Reference and variant amino acids
+## Codons : Reference and variant codon sequence
+## Existing_variation : Identifier(s) of co-located known variants
+## Extra column keys:
+## IMPACT : Subjective impact classification of consequence type
+## DISTANCE : Shortest distance from variant to transcript
+## STRAND : Strand of the feature (1/-1)
+## FLAGS : Transcript quality flags
+## SIFT : SIFT prediction and/or score
+## PolyPhen : PolyPhen prediction and/or score
+#Uploaded_variation	Location	Allele	Gene	Feature	Feature_type	Consequence	cDNA_position	CDS_position	Protein_position	Amino_acids	Codons	Existing_variation	Extra

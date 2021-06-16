@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Output
+{% endblock %}
+
+{% block bar %}
+  <div class="collapse navbar-collapse" id="navbarColor02">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Single Variant Search<span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/list">Variant List Search<span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/about">About<span class="sr-only">(current)</span></a>
+      </li>
+    </ul>
+  </div>
+{% endblock %}
+
+{% block main %}
+  <h1>Output</h1>
+  <div class="jumbotron">
+    <p class="lead">{{ pred }}</p>
+    <hr class="my-4">
+    <!-- <p>{{ ans }}</p> -->
+    <div style="text-align:left">
+      <ul>
+        {%for line in ans%}
+          <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <!-- Wrap boxes so they stay in a row -->
+  <div class = "wrapper" style="max-width: 60rem; display: inline-block;">
+    <!-- Table with VEP output -->
+    <div class="card border-secondary mb-3" style="width:20rem;">
+      <div class="card-header text-muted"><strong>VEP Output</strong></div>
+      <div class="card-body">
+        <table class="table table-hover">
+          <tbody>
+            {%for score in vep_output%}
+              <tr class="table-dark">
+                <td><h6>{{score}}</h6></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Box with link to OMIM and description -->
+    <div class="card border-danger mb-3" style="width: 15rem; float: left; margin-right: 4px;">
+      <div class="card-header text-danger"><strong>OMIM</strong></div>
+      <div class="card-body">
+        <a href="https://omim.org/search?index=entry&search={{ gene_id }}" class="card-link" target="_blank">
+          <h4 class="card-title">{{ gene_id }}</h4>
+        </a>
+        <p class="card-text">OMIM is a database of human genes and genetic phenotypes. Click the link above
+        to read more about the function and disease implications of your gene of interest.</p>
+      </div>
+    </div>
+    <!-- Box with link to gnomAD and description -->
+    <div class="card border-info mb-3" style="width: 15rem; float: right; margin-left: 4px;">
+      <div class="card-header text-info"><strong>gnomAD</strong></div>
+      <div class="card-body">
+        <a href="https://gnomad.broadinstitute.org/variant/{{ var }}?dataset=gnomad_r2_1" class="card-link" target="_blank">
+          <h4 class="card-title">{{ var }}</h4>
+        </a>
+        <p class="card-text">Clicking the link above will bring you to the gnomAD page for this variant.
+        If the page says "Variant Not Found" it is likely because this variant doesn't exist in the gnomAD database
+        making it <strong>very</strong> rare.</p>
+      </div>
+    </div>
+    <!-- Box with link to gnomAD and description -->
+    <div class="card border-success mb-3" style="width: 40rem; margin-left: 4px;">
+      <div class="card-header text-info"><strong>Clinvar</strong></div>
+      <div class="card-body">
+        <a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/{{ clinvar }}/" class="card-link" target="_blank">
+          <h4 class="card-title">{{ hgvs }}</h4>
+        </a>
+        <p class="card-text">Clinvar is a public database of human variants and their relationships to human health and disease phenotypes.
+        Click the link above to read more about the variant and to review publically-available literature about the variant and disease.</p>
+      </div>
+    </div>
+    <!-- Table with literature output -->
+    <div class="card border-secondary mb-3" style="width:80rem;">
+      <div class="card-header text-muted"><strong>Literature links</strong></div>
+      <div class="card-body">
+        <table class="table table-hover">
+          <tbody>
+            {%for id, title in literature%}
+              <tr class="table">
+                <td>
+                  <a href="https://pubmed.ncbi.nlm.nih.gov/{{ id }}" class="card-link" target="_blank">
+                    <h6 class="card-title">{{ title }}</h6>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

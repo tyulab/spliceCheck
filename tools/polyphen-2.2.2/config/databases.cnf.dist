@@ -1,0 +1,135 @@
+#==============================================================================
+# PolyPhen-2 DATABASE CONFIGURATION
+#------------------------------------------------------------------------------
+# This file contains the paths and configuration flags for the databases
+# required by PolyPhen-2
+#------------------------------------------------------------------------------
+#
+# $LastChangedDate: 2012-02-12 16:12:59 -0500 (Sun, 12 Feb 2012) $
+# $LastChangedRevision: 385 $
+# $LastChangedBy: ivan $
+#
+#==============================================================================
+
+#==============================================================================
+# UniRef100 database - or any other non-redundant protein sequence database
+#==============================================================================
+# Homepage:     ftp://ftp.uniprot.org/pub/databases/uniprot/uniref/uniref100
+# Download:     ftp://ftp.uniprot.org/pub/databases/uniprot/uniref/uniref100/uniref100.fasta.gz
+# ------------------------------------------------------------------------------
+# Note:         You will need a BLAST formatted database to create alignments
+#               Enter full path and name of the database, without a suffix
+#------------------------------------------------------------------------------
+NRDB_BLAST      = $CONFIG{PPH}/nrdb/uniref100
+
+#------------------------------------------------------------------------------
+#               Database from which full-length sequences for BLAST hits
+#               will be retrieved using FASTACMD
+#------------------------------------------------------------------------------
+# Note:         Normally set to point to NRDB_BLAST
+#------------------------------------------------------------------------------
+NRDB_FASTA      = $CONFIG{NRDB_BLAST}
+
+#==============================================================================
+# Uniprot       PolyPhen-2 retrieves sequences and annotations from UniProtKB
+#------------------------------------------------------------------------------
+# Homepage:     http://www.uniprot.org/
+# Download:     ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_sprot_human.dat.gz
+# Download:     ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_trembl_human.dat.gz
+# Download:     ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping_selected.tab.gz
+# Download:     ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot_varsplic.fasta.gz
+# Citation:     The UniProt Consortium (2007)
+#               The Universal Protein Resource (UniProt).
+#               Nucleic Acids Res. 35: D193-197.
+# Homepage:     http://pfam.sanger.ac.uk/
+# Download:     ftp://ftp.sanger.ac.uk/pub/databases/Pfam/current_release/swisspfam.gz
+# Citation:     The Pfam protein families database.
+#               Nucleic Acids Research (2010) Database Issue 38:D211-222
+#------------------------------------------------------------------------------
+# Note:         The database is created with the uniprot.pl and unipfam.pl scripts,
+#               which will download, parse and format necessary files automatically.
+#               PolyPhen-2 retrieves sequences and annotations from this database
+#==============================================================================
+UNIPROT         = $CONFIG{PPH}/uniprot/$CONFIG{REFORGCOMMON}
+
+#==============================================================================
+# PDB           Structural data repository
+#------------------------------------------------------------------------------
+# Hompage:      http://www.rcsb.org
+#------------------------------------------------------------------------------
+# Note:         Please mirror PDB to a local directory.
+#               Only the contents of .../data/structures/all/pdb folder are
+#               required. You don't have to uncompress entry files, i.e., all
+#               *.ent, *.ent.Z, and *.ent.gz files are supported.
+#==============================================================================
+PDB             = $CONFIG{PPH}/wwpdb/all/pdb
+
+#------------------------------------------------------------------------------
+# Note:         Since the naming conventions may differ, extra variables are
+#               introduced (PDB_PREFIX, PDB_SUFFIX). PDB_ID_SUFFIX defines
+#               FASTA ID format for PDB sequences: >PDB_ID_SUFFIX|PDBID|PDBCHAIN
+#------------------------------------------------------------------------------
+PDB_PREFIX      = pdb
+PDB_SUFFIX      = ent
+PDB_ID_SUFFIX   = pdb
+
+#------------------------------------------------------------------------------
+# Note:         Use 'pdb2fasta.pl' script to create PDB sequences database
+#------------------------------------------------------------------------------
+PDB2FASTA       = $CONFIG{PPH}/pdb2fasta
+
+#==============================================================================
+# DSSP          Dictionary of Protein Secondary Structure
+#------------------------------------------------------------------------------
+# Homepage:     http://swift.cmbi.ru.nl/gv/dssp/
+# Download:     rsync://rsync.cmbi.ru.nl/dssp/
+# Citation:     Kabsch, W., Sander, C. (1983). Dictionary of Protein Secondary
+#               Structure: Pattern Recognition of Hydrogen-Bonded and
+#               Geometrical Features.
+#               Biopolymers, Vol. 22, 2577-2637
+#------------------------------------------------------------------------------
+# Note:         This database is optional since DSSP program can be used instead
+#               of it to compute protein secondary structure on the fly
+#==============================================================================
+DSSP            = $CONFIG{PPH}/dssp
+
+#==============================================================================
+# Following configuration variables are only used by MapSNPs annotation tool
+#==============================================================================
+# GOLDENPATH    UCSC Genome Browser annotations
+#------------------------------------------------------------------------------
+# Homepage:     http://genome.ucsc.edu/
+# Download:     http://hgdownload.cse.ucsc.edu/downloads.html
+# Citation:     Rhead B, Karolchik D, Kuhn RM, Hinrichs AS, Zweig AS, Fujita P,
+#               Diekhans M, Smith KE, Rosenbloom KR, Raney BJ, Pohl A, Pheasant M,
+#               Meyer L, Hsu F, Hillman-Jackson J, Harte RA, Giardine B, Dreszer T,
+#               Clawson H, Barber GP, Haussler D, Kent WJ.
+#               The UCSC Genome Browser database: update 2010.
+#               Nucleic Acids Res. 38(Database issue):D613-9 (2010)
+#
+#               - GOLDENPATH specifies top directory path where genome annotation
+#                 databases for different versions of the genome assembly are stored,
+#                 with various files arranged in subdirectories under this tree
+#               - GENESET specifies default set of chromosome coordinates and gene
+#                 annotations used; currently supported versions are hg19 and hg18
+#
+#               Example of GOLDENPATH directory tree structure:
+#
+#                 /opt/data/ucsc/hg18/genes/
+#                 /opt/data/ucsc/hg18/liftOver/
+#                 /opt/data/ucsc/hg18/multiz/
+#                 ...
+#                 /opt/data/ucsc/hg19/genes/
+#                 /opt/data/ucsc/hg19/liftOver/
+#                 /opt/data/ucsc/hg19/multiz/
+#==============================================================================
+GOLDENPATH      = $CONFIG{PPH}/ucsc
+GENESET         = hg19
+
+#==============================================================================
+# MULTIZPATH    Path to UCSC MultiZ exome-based protein sequence alignments in
+#               PolyPhen-2 format and corresponding precomputed PSIC profiles.
+# MULTIZTREE    Corresponding MultiZ phylogenetic tree file in Newick format
+#==============================================================================
+MULTIZPATH      = $CONFIG{GOLDENPATH}/$CONFIG{GENESET}/multiz
+#MULTIZTREE      = $CONFIG{MULTIZPATH}/$CONFIG{GENESET}/mz.nh

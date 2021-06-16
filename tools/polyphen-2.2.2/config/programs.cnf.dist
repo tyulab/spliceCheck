@@ -1,0 +1,196 @@
+#==============================================================================
+# PolyPhen-2 PROGRAMS
+#------------------------------------------------------------------------------
+# This file contains file paths and settings for programs used by PolyPhen-2
+# (You can also use relative paths, e.g. $CONFIG{PPH})
+#------------------------------------------------------------------------------
+#
+# $LastChangedDate: 2012-05-23 14:30:10 -0400 (Wed, 23 May 2012) $
+# $LastChangedRevision: 398 $
+# $LastChangedBy: ivan $
+#
+#==============================================================================
+
+#==============================================================================
+# General path to executables
+#------------------------------------------------------------------------------
+# Note:         The default configuration is to put all binaries in the same
+#               directory under PPH tree (e.g., .../pph/bin/). However, some
+#               of the programs utilized in the PPH pipeline are not distributed
+#               with the PolyPhen-2 (e.g., BLAST, BLAT). Such programs can be
+#               installed elsewhere on the system with just the names of their
+#               executables specified in PolyPhen-2 configuration. Such
+#               executables will be searched in the locations listed in the
+#               system PATH. See NCBI BLAST section for an example.
+#==============================================================================
+BIN             = $CONFIG{PPH}/bin
+#------------------------------------------------------------------------------
+
+#==============================================================================
+# NCBI BLAST+ Tools
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# Homepage:     ftp://ftp.ncbi.nih.gov/blast/executables/blast+/LATEST/
+# Citation:     Altschul, S.F., Gish, W., Miller, W., Myers, E.W. & Lipman, D.J.
+#               (1990) "Basic local alignment search tool."
+#               J. Mol. Biol. 215:403-410
+#------------------------------------------------------------------------------
+FASTACMD        = $CONFIG{PPH}/blast/bin/blastdbcmd
+BLAST           = $CONFIG{PPH}/blast/bin/blastp
+
+#==============================================================================
+# Structure Helper Tools
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# COILS - coiled-coil prediction
+#------------------------------------------------------------------------------
+# Homepage:     http://www.russell.embl.de/cgi-bin/coils-svr.pl
+# Site:         http://www.russell.embl-heidelberg.de/coils/coils.tar.gz
+# License:      GPL
+# Citation:     Lupas, van Dyke & Stock, Predicting coiled coils from protein
+#               sequences Science, 252, 1162-1164, 1991.
+#------------------------------------------------------------------------------
+COILS           = $CONFIG{BIN}/ncoils
+
+#------------------------------------------------------------------------------
+# DSSP - Retrieving the secondary structure from pdb files
+#------------------------------------------------------------------------------
+# Homepage:     http://swift.cmbi.ru.nl/gv/dssp/
+# Citation:     Kabsch, W., Sander, C. Dictionary of Protein Secondary
+#               Structure: Pattern Recognition of Hydrogen-Bonded and
+#               Geometrical Features.
+#               Biopolymers, Vol. 22, 2577-2637 (1983)
+# Citation:	Joosten R.P., te Beek T.A.H., Krieger E., Hekkelman M.L.,
+#		Hooft R.W.W., Schneider R., Sander C., Vriend G.
+#		A series of PDB related databases for everyday needs.
+#		Nucleic Acids Res, 39(Database issue):D411-9 (2011)
+#------------------------------------------------------------------------------
+DSSPCMBI        = $CONFIG{BIN}/dsspcmbi
+
+#------------------------------------------------------------------------------
+# Hydrogen bond calculation
+# Homepage:     http://www.biochem.ucl.ac.uk/bsm/hbplus/home.html
+# Site:         ftp://ftp.biochem.ucl.ac.uk/pub/hbplus/hbplus.tar.Z
+# License:      free for academic usage
+# Citation:     I.K. McDonald and J.M. Thornton (1994),
+#               "Satisfying Hydrogen Bonding Potential in Proteins",
+#               JMB 238:777-793.
+#------------------------------------------------------------------------------
+HBPLUS          = $CONFIG{BIN}/hbplus
+
+#------------------------------------------------------------------------------
+# retrieve B-factors from a pdb file
+#   (citation / reference here)
+#------------------------------------------------------------------------------
+BFACT           = $CONFIG{BIN}/bfact
+
+#------------------------------------------------------------------------------
+# calculate distances between atoms
+# (citation / reference here)
+#------------------------------------------------------------------------------
+DIST            = $CONFIG{BIN}/dist
+
+#==============================================================================
+# Alignment procedure
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# BLAT - BLAST like alignment tool
+#------------------------------------------------------------------------------
+# Homepage:     http://www.soe.ucsc.edu/~kent/
+# Citation:     Kent, W.J. 2002.
+#               BLAT - The BLAST-Like Alignment Tool.
+#               Genome Research 4: 656-664
+# Download:     http://hgdownload.cse.ucsc.edu/admin/exe/
+#------------------------------------------------------------------------------
+# Note:         BLAT is used to map protein sequences to genome transcripts
+#               TWOBIT is twoBitToFa conversion tool from BLAT utils
+#------------------------------------------------------------------------------
+BLAT            = $CONFIG{BIN}/blat
+TWOBIT          = $CONFIG{BIN}/twoBitToFa
+
+#------------------------------------------------------------------------------
+# Multiple sequence alignment program
+#------------------------------------------------------------------------------
+# Homepage:     http://mafft.cbrc.jp/alignment/software/
+# Download:     http://mafft.cbrc.jp/alignment/software/linux.html
+# Download:     http://mafft.cbrc.jp/alignment/software/mafft-6.851-without-extensions-src.tgz
+# Citation:     Katoh K, Toh H.
+#               Recent developments in the MAFFT multiple sequence alignment program.
+#               Brief Bioinform. (2008) 9(4):286-98.
+#------------------------------------------------------------------------------
+MSA             = $CONFIG{BIN}/mafft
+
+#------------------------------------------------------------------------------
+# LEON is a multiple sequence alignment improvement procedure
+#------------------------------------------------------------------------------
+# Download:     ftp://ftp-igbmc.u-strasbg.fr/pub/Leon/leon_1.0.tar.gz
+# Download:     ftp://ftp-igbmc.u-strasbg.fr/pub/Leon/leon_1.1.tar.gz
+# Citation:     Thompson JD, Prigent V, Poch O.
+#               LEON: multiple aLignment Evaluation Of Neighbours.
+#               Nucleic Acids Res. (2004) 24;32(4):1298-307.
+#------------------------------------------------------------------------------
+# Note:         LEON specifies path to the LEON tools binary executables,
+#               default is $PPH/bin/ folder.
+#               WARNING! - DO NOT remove trailing slash from the path
+#------------------------------------------------------------------------------
+LEON            = $CONFIG{BIN}/
+
+#------------------------------------------------------------------------------
+# CLUSPACK
+#------------------------------------------------------------------------------
+# Homepage:     http://www-bio3d-igbmc.u-strasbg.fr/~wicker/programs.html
+# Download:     http://www-bio3d-igbmc.u-strasbg.fr/~wicker/Programs/cluspack.tar.gz
+# Citation:     Secator: A Program for Inferring Protein Subfamilies from
+#               Phylogenetic Trees. Nicolas Wicker, Guy Rene Perrin,
+#               Jean-Claude Thierry and Olivier Poch. Molecular
+#               Biology Evolution 18(8): 1435-1441, 2001.
+# Citation:     Density of points clustering, application to
+#               transcriptomic data analysis. Nicolas Wicker, Doulaye
+#               Dembele, Wolfgang Raffelsberger and Olivier
+#               Poch. Nucleic Acids Research 30(18): 3392-4000, 2002.
+#------------------------------------------------------------------------------
+CLUSPACK        = $CONFIG{BIN}/cluspack
+
+#------------------------------------------------------------------------------
+# PSIC - Position-Specific Independent Counts for multiple sequences alignments
+#------------------------------------------------------------------------------
+# Homepage:     http://strand.imb.ac.ru/PSIC/
+# Citation:     Sunyaev SR, Eisenhaber F, Rodchenkov IV, Eisenhaber B,
+#               Tumanyan VG, Kuznetsov EN (1999)
+#               PSIC: profile extraction from sequence alignments with
+#               position-specific counts of independent observations.
+#               Protein Eng. 12(5):387-94
+#------------------------------------------------------------------------------
+# Note:         The source code is included with PolyPhen-2
+#------------------------------------------------------------------------------
+PSIC            = $CONFIG{BIN}/psic
+
+#------------------------------------------------------------------------------
+# FETCHSEQ - Utility to retrieve sequences from a FASTA formatted file
+#------------------------------------------------------------------------------
+# Note:         The source code is included with PolyPhen-2
+#------------------------------------------------------------------------------
+FETCHSEQ        = $CONFIG{BIN}/fetchseq
+
+#------------------------------------------------------------------------------
+# MATRIX - General location of matrix files for PSIC / PHAT / COILS calculation
+#------------------------------------------------------------------------------
+# Note:         Path to store various matrix files. Normally, the matrices are
+#               copied into proper location automatically during installation.
+#------------------------------------------------------------------------------
+MATRIX          = $CONFIG{PPH}/matr
+
+#------------------------------------------------------------------------------
+# WEKA - Data Mining Software in Java
+# Homepage:     http://www.cs.waikato.ac.nz/ml/weka/index.html
+# Download:     http://prdownloads.sourceforge.net/weka/weka-3-6-6.zip
+#------------------------------------------------------------------------------
+WEKA            = $CONFIG{PPH}/weka
+
+#------------------------------------------------------------------------------
+# Probabilistic classifier model file (default)
+#------------------------------------------------------------------------------
+WEKAMODEL       = $CONFIG{PPH}/models/HumDiv.UniRef100.NBd.f11.model

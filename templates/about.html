@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    About
+{% endblock %}
+
+{% block bar %}
+  <div class="collapse navbar-collapse" id="navbarColor02">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Single Variant Search<span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/list">Variant List Search<span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item active">
+        <a class="nav-link" href="/about">About<span class="sr-only">(current)</span></a>
+      </li>
+    </ul>
+  </div>
+{% endblock %}
+
+{% block main %}
+  <h1>About</h1>
+  <p>
+    Splice Check is a tool designed to check if a missense mutation causes a splice defect that could potentially be ammenable by antisense
+    oligonucleotide therapy. Typically missense mutations are assumed to be pathogenic because of the impact that single amino
+    acid change has on the protein structure, but in many cases the nucleotide change could be altering splicing by destroying a
+    canonical splice site or creating a new one.
+    We work in a genetics lab at Boston Children's Hospital and we are working to fix this splicing mutations in children with rare
+    diseases using a type of personalized gene therapy. Read more about that
+    <a href="https://www.theyulab.org">
+      here.</a>
+  </p>
+  <div class="jumbotron">
+    <h2>References</h2>
+    <p class="lead"> Splice Check calls the following tools and uses them for this analysis.</p>
+    <hr class="my-4">
+    <div class="list-group">
+      <a href="https://useast.ensembl.org/info/docs/tools/vep/index.html" target="_blank" class="list-group-item list-group-item-action">
+        <strong>VEP: </strong>Variant Effect Predictor
+      </a>
+      <a href="http://sift.bii.a-star.edu.sg/" target="_blank" class="list-group-item list-group-item-action">
+        <strong>SIFT: </strong>A SIFT score predicts whether an amino acid substitution affects protein function by looking at
+        how well it is conserved across different species.
+      </a>
+      <a href="http://genetics.bwh.harvard.edu/pph2/" target="_blank" class="list-group-item list-group-item-action">
+        <strong>PolyPhen-2: </strong>This tool predicts possible impact of an amino acid substitution on the structure and function
+        of a human protein.
+      </a>
+      <a href="http://genes.mit.edu/burgelab/maxent/Xmaxentscan_scoreseq.html" target="_blank" class="list-group-item list-group-item-action">
+        <strong>MaxEntScan: </strong>MaxEntScan is a splice predicting algorithm.
+      </a>
+      <a href="https://www.omim.org/" target="_blank" class="list-group-item list-group-item-action">
+        <strong>OMIM: </strong>Online Mendelian Inheritance in Man is a large database of human genetic resources.
+      </a>
+      <a href="http://gnomad.broadinstitute.org" target="_blank" class="list-group-item list-group-item-action">
+        <strong>gnomad</strong>: gnomAD is a genomic database coprised of 125,748 exome sequences and 15,708 whole-genome
+        sequences from unrelated individuals sequenced as part of various disease-specific and population genetic studies.
+      </a>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,95 @@
+#==============================================================================
+# PolyPhen-2 PROGRAM OPTIONS
+#------------------------------------------------------------------------------
+# This file contains advanced configuration options for the programs used in
+# the PolyPhen-2 pipeline. Normally, this file should not be edited.
+#------------------------------------------------------------------------------
+#
+# $LastChangedDate: 2011-11-21 13:28:37 -0500 (Mon, 21 Nov 2011) $
+# $LastChangedRevision: 376 $
+# $LastChangedBy: ivan $
+#
+#==============================================================================
+
+#==============================================================================
+# NCBI BLAST+ settings
+#==============================================================================
+# BLAST+ command line arguments:
+# -seg no/yes       SEG filter
+# -evalue           Cut-off for expect value
+# -num_threads      N of threads/CPU cores utilized
+# -num_alignments   Max no of hits in alignments
+# -num_descriptions Max no of hits in summary
+# -outfmt 5         XML output
+# -db               Database to use
+#------------------------------------------------------------------------------
+# Note:         BLAST_ALN is used to retrieve sequences for the alignment
+#               BLAST_3D  helps to find structures with high sequences identity
+#------------------------------------------------------------------------------
+BLAST_ALN       = -seg yes -evalue $CONFIG{BLAST_EVALUE} -num_threads 1 -max_target_seqs $CONFIG{BLAST_HITS_LIMIT} -outfmt 5 -db $CONFIG{NRDB_BLAST}
+BLAST_3D        = -seg no -evalue 1e-4 -num_threads 1 -max_target_seqs 20 -outfmt 5 -db $CONFIG{PDB2FASTA}/$CONFIG{PDB_ID_SUFFIX}
+
+#==============================================================================
+# BLAT
+#==============================================================================
+BLAT_ARG        = -prot -out=psl -noHead -minIdentity=$CONFIG{BLAT_MIDENT)
+
+#==============================================================================
+# Multiple sequence alignment pipeline (MAFFT)
+#==============================================================================
+# Note:         BLAST_HITS_LIMIT limits maximum number of best hits to database
+#               targets (i.e., unique proteins) in BLAST search results, while
+#               MSA_NSEQS_LIMIT sets limit to the total number of sequences
+#               accepted as input for MSA pipeline. If USEFULLSEQ option is set
+#               or MULTIHSP option is not set, MSA_NSEQS_LIMIT is effectively
+#               overriden by value of BLAST_HITS_LIMIT since only single protein
+#               sequence per each best scoring HSP is accepted. However, when
+#               MULTIHSP option is in effect (default) then multiple HSPs per
+#               each BLAST target hit can be accepted. If total count of aa
+#               residues in all sequences in MSA input exceeds MSA_SEQLEN_LIMIT
+#               the remaining sequences are discarded.
+#               MSA_SLOW_* and MSA_NORM_* are different settings for initial
+#               multiple sequence alignment accurracy. Depending on these limits,
+#               PolyPhen-2 MSA pipeline switches to faster / less accurate
+#               algorithm.
+#               There is also absolute MSA_T_LIMIT (in secs) for the
+#               MSA program execution time. A simple BLAST alignment approach
+#               is used if multiple alignment program exceeds this limit.
+#------------------------------------------------------------------------------
+BLAST_HITS_LIMIT   = 1000
+MSA_NSEQS_LIMIT    = 2000
+MSA_SEQLEN_LIMIT   = 5000000
+MSA_SLOW_MAXNSEQS  = 500
+MSA_SLOW_MAXSEQLEN = 4000
+MSA_NORM_MAXNSEQS  = 2000
+MSA_NORM_MAXSEQLEN = 40000
+MSA_SLOW  = --quiet --amino --localpair --maxiterate 1000
+MSA_NORM  = --quiet --amino --retree 2 --maxiterate 2
+MSA_FAST  = --quiet --amino --retree 2 --maxiterate 0
+# 48 hours
+MSA_T_LIMIT = 172800
+
+#==============================================================================
+# LEON
+#==============================================================================
+# 3 hours
+LEON_T_LIMIT = 10800
+
+#==============================================================================
+# CLUSPACK
+#==============================================================================
+# Note:          CLUSPACK_T_LIMIT (sec) allows to limit time the clustering runs
+#------------------------------------------------------------------------------
+CLUSPACK_ARG = %s -data_type=alignment -clustering_method=bionj -nb_clusters=secator -filtering_distance=0.01
+# 1 hour
+CLUSPACK_T_LIMIT = 3600
+
+#==============================================================================
+# PSIC
+#==============================================================================
+# Note:         WARNING! - Changed in v2.0.23, PSIC profiles compiled with the
+#               previous versions are incompatible with v2.0.23 and above.
+#               Please, remove all old *.prf files from your "scratch/profiles"
+#               and "precomputed/profiles" subdirectories.
+#------------------------------------------------------------------------------
+PSIC_ARG        = -l

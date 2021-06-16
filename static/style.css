@@ -1,0 +1,61 @@
+nav .navbar-brand
+{
+    /* size for brand */
+    font-size: xx-large;
+}
+
+nav .navbar-brand .blue
+{
+    color: #54ABEC;
+}
+
+nav .navbar-brand .purple
+{
+    color: #9266CB;
+}
+
+main .form-control
+{
+    /* center form controls */
+    display: inline-block;
+
+    /* override Bootstrap's 100% width for form controls */
+    width: auto;
+}
+
+main
+{
+    /* scroll horizontally as needed */
+    overflow-x: auto;
+
+    /* center contents */
+    text-align: center;
+}
+
+main img
+{
+    /* constrain images on small screens */
+    max-width: 100%;
+}
+
+div .card
+{
+    display: inline-block;
+    max-width: 55rem;
+}
+
+input[type="file"] {
+    display: block;
+    margin: auto;
+}
+
+/*label .chooseFile {
+    display: block;
+    font: 1rem 'Fira Sans', sans-serif;
+}*/
+
+/*input .listFile {
+    display: inline-block;
+    margin: .12rem 0;
+}
+*/
