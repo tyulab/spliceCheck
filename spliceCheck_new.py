@@ -83,7 +83,7 @@ def spliceai(gnomad):
 		# Retrieve PubMed IDs
 		server = "https://spliceailookup-api.broadinstitute.org/"
 		get = "spliceai/"
-		params = {"hg": 38, "distance":5000, "variant":gnomad}	# change to 5000 for ATM project
+		params = {"hg": 38, "distance":50, "variant":gnomad}	# change to 5000 for ATM project
 		r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"})
 
 		if not r.ok:
@@ -265,7 +265,10 @@ def determine_impacts(gen_chr, gen_start, hgvs, consequence, sift_score, polyphe
 	if type(spliceai_pred) is list:
 		spliceai = "No SpliceAI prediction found."
 	else:
-		spliceai_info = spliceai_pred.strip().split("|")
+		if "---" in spliceai_pred:
+			spliceai_info = spliceai_pred.strip().split("---")[-1].split("|")
+		else:
+			spliceai_info = spliceai_pred.strip().split("|")
 		acceptor_gain, acceptor_loss, donor_gain, donor_loss = float(spliceai_info[1]), float(spliceai_info[2]), float(spliceai_info[3]), float(spliceai_info[4])
 		acc_gain_pos, acc_loss_pos, donor_gain_pos, donor_loss_pos = strand * float(spliceai_info[5]), strand * float(spliceai_info[6]), strand * float(spliceai_info[7]), strand * float(spliceai_info[8])
 		if acceptor_gain >= spliceai_threshold:
@@ -333,9 +336,9 @@ def mes5_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length=0, indel_bp=
 				seq9mut = "{}{}{}".format(res_sequence[0:mes5lowdiff], indel_bp, res_sequence[mes5lowdiff:mes5lowdiff+mes5highdiff-len(indel_bp)-1]).lower()
 			else:
 				seq9mut = "{}{}{}".format(seq9wt[0:mes5lowdiff], mut, seq9wt[mes5lowdiff+1:mes5lowdiff+mes5highdiff]).lower()
-			print(res_sequence.lower(), mes5lowdiff, mes5highdiff, indel_length, indel_bp)
-			print(seq9wt, len(seq9wt))
-			print(seq9mut, len(seq9mut), "\n")
+			# print(res_sequence.lower(), mes5lowdiff, mes5highdiff, indel_length, indel_bp)
+			# print(seq9wt, len(seq9wt))
+			# print(seq9mut, len(seq9mut), "\n")
 			return create_mes_dict(seq9wt, seq9mut, 5, strand)
 		else:
 			print("Something went wrong with 5' maxentscan. Please re-enter your coordinates.")
@@ -391,9 +394,9 @@ def mes3_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length=0, indel_bp=
 				seq23mut = "{}{}{}".format(res_sequence[0:mes23lowdiff], indel_bp, res_sequence[mes23lowdiff:mes23lowdiff+mes23highdiff-len(indel_bp)]).lower()
 			else:
 				seq23mut = "{}{}{}".format(seq23wt[0:mes23lowdiff], mut, seq23wt[mes23lowdiff+1:mes23lowdiff+mes23highdiff]).lower()
-			print(res_sequence.lower(), mes23lowdiff, mes23highdiff, indel_length, indel_bp)
-			print(seq23wt, len(seq23wt))
-			print(seq23mut, len(seq23mut), "\n")
+			# print(res_sequence.lower(), mes23lowdiff, mes23highdiff, indel_length, indel_bp)
+			# print(seq23wt, len(seq23wt))
+			# print(seq23mut, len(seq23mut), "\n")
 			return create_mes_dict(seq23wt, seq23mut, 3, strand)
 		else:
 			print("Something went wrong with 3' maxentscan. Please re-enter your coordinates.")
@@ -703,6 +706,74 @@ def determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, si
 
 	return aso_amenability
 
+# determine aso amenabiltiy using Jinkuk's thresholds
+def determine_amenability_jinkuk(mes_analyses, spliceai_analyses, hgvs, consequence, sift_score, polyphen_score, strand):
+	sift_threshold = 0.05
+	polyphen_threshold = 0.85
+	deep_intron_threshold = 50	# Taken from the SpliceAI paper
+	aso_amenability = ""
+	intron, intron_depth = False, ""
+	coding_impact_numerical, splicing_impact_numerical = 0, 3
+
+	# Analyze the variant - in an intron?
+	if "+" in hgvs or "-" in hgvs:
+		intron = True
+		if "+" in hgvs:
+			for char in hgvs.split("+")[1]:
+				if char.isnumeric():
+					intron_depth += char
+		elif "-" in hgvs:
+			intron_depth += "-"
+			for char in hgvs.split("-")[1]:
+				if char.isnumeric():
+					intron_depth += char	
+		else:
+			intron_depth = "0"
+	else:
+		intron_depth = "0"
+	 # intron_depth = int(intron_depth) * strand
+	intron_depth = int(intron_depth)
+
+	# Step 1: First check for stop gain / frameshift
+	if consequence == "stop_gained" or "stop" in consequence:
+		aso_amenability = "It's very unlikely this variant is ASO-amenable because it is a nonsense mutation."
+		return aso_amenability
+	elif consequence == "frameshift_variant" or "frameshift" in consequence:
+		aso_amenability = "It's very unlikely this variant is ASO-amenable because it is a frameshift mutation."
+		return aso_amenability
+
+	# Step 2: Analyze coding damage
+	if type(sift_score) is not list and type(polyphen_score) is not list: 
+		if sift_score <= sift_threshold and polyphen_score >= polyphen_threshold:	# complete damage
+			coding_impact_numerical = 1
+		elif sift_score >= sift_threshold and polyphen_score <= polyphen_threshold:	# no or little
+			coding_impact_numerical = 3
+		else:	# all else
+			coding_impact_numerical = 2
+
+	# Step 3: Analyze splicing damage
+	for entry in spliceai_analyses:
+		if len(spliceai_analyses) == 1 and spliceai_analyses[entry][1] == 0 and float(entry.split(":")[1]) < 0.02:	# no or little
+			new_impact = 3
+			if new_impact <= splicing_impact_numerical:
+				splicing_impact_numerical = new_impact
+		elif spliceai_analyses[entry][1] == 0 and float(entry.split(":")[1]) >= 0.02 and float(entry.split(":")[1]) < 0.1:	# moderate
+			for m_entry in mes_analyses:
+				if float(m_entry.split(":")[1]) >= 2 and float(m_entry.split(":")[1]) >= (0.03 * float(m_entry.split(":")[0])):
+					new_impact = 2
+					if new_impact <= slicing_impact_numerical:
+						splicing_impact_numerical = new_impact
+		elif spliceai_analyses[entry][1] == 0 and float(entry.split(":")[1]) >= 0.1:	# strong/incomplete and complete damage
+			for m_entry in mes_analyses:
+				if float(m_entry.split(":")[1]) >= 2 and float(m_entry.split(":")[1]) >= (0.03 * float(m_entry.split(":")[0])):	# strong/incomplete
+					new_impact = 1
+					if new_impact <= slicing_impact_numerical:
+						splicing_impact_numerical = new_impact
+				elif float(m_entry.split(":")[1]) < 2 or float(m_entry.split(":")[1]) < (0.03 * float(m_entry.split(":")[0])):	# complete damage
+					new_impact = 1
+					if new_impact <= slicing_impact_numerical:
+						splicing_impact_numerical = new_impact
+
 # refseqID: NM_003159
 # ensemblID: ENST00000379996 for cdkl5
 def get_output(hgvs, wt="", mut="", transcript=""):
@@ -730,7 +801,7 @@ def get_output(hgvs, wt="", mut="", transcript=""):
 	# adjust for strand
 	strand, indel_length, indel_bp = 1, 0, ""
 	for key in res:
-		print(key, res[key])
+		# print(key, res[key])
 		if (key == "strand" or "strand" in key) and (res[key] == -1):
 			strand = -1
 		if "del" in hgvs and (key == "allele_string" or "allele_string" in key):
@@ -844,8 +915,14 @@ def get_output(hgvs, wt="", mut="", transcript=""):
 	mes_dict_5 = mes5_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
 	mes_dict_3 = mes3_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
 
-	# # # Determine if this mutation is amenable
+	# Determine if this mutation is amenable
 	coding_impact, splicing_impact, consequence, mes_analyses, spliceai_analyses = determine_impacts(gen_chr, gen_start, hgvs, consequence, sift_score, polyphen_score, maxentscan_ref, maxentscan_alt, maxentscan_diff, spliceai_pred, mes_dict_5, mes_dict_3, strand)
+	
+	# IMPT:
+	# mes_analyses is a dictionary that maps key: "key,ref,alt,delta" to a tuple value: (x, y, z) where x=high/moderate/low prob, y=donor/acceptor, z=weakened/strengthened
+	# spliceai_analyses is a dictionary that maps key: "pos_delta,prob_delta" to a tuple value: (x, y), where x=acceptor/donor, y=loss/gain
+	print(mes_analyses, spliceai_analyses)
+
 	aso_prediction = determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, sift_score, polyphen_score, strand)
 
 	d = {
@@ -934,9 +1011,58 @@ def main():
 	# tup2 = get_output("WDR81:c.2292_2309del18")
 	# tup2 = get_output("MGP:c.94+1G>A", "G", "A")
 	# tup2 = get_output("ABCA4:c.5461-10T>C", "T", "C")
-	# tup2 = get_output("ATM:c.7865C>T", "C", "T")
-	tup2 = get_output("ATM:c.7914G>T", "G", "T")
+	tup2 = get_output("ATM:c.7865C>T", "C", "T")
 	print(tup2)
+
+	# variants = [
+	# ("ATM:c.7865C>T", "C", "T"),
+	# ("ATM:c.6203T>C", "T", "C"),
+	# ("ATM:c.5763-1050A>G", "A", "G"),
+	# ("ATM:c.3994-159A>G", "A", "G"),
+	# ("ATM:c.3489C>T", "C", "T"),
+	# ("ATM:c.4801A>G", "A", "G"),
+	# ("ATM:c.7318A>G", "A", "G"),
+	# ("ATM:c.6348-987G>C", "G", "C"),
+	# ("ATM:c.7914G>T", "G", "T"),
+	# ("ATM:c.2639-21A>G", "A", "G"),
+	# ("ATM:c.3529T>C", "T", "C"),
+	# ("ATM:c.6573-15T>G", "T", "G"),
+	# ("ATM:c.8494C>T", "C", "T"),
+	# ("ATM:c.5228C>T", "C", "T"),
+	# ("ATM:c.6047A>G", "A", "G"),
+	# ("ATM:c.8495G>T", "G", "T"),
+	# ("ATM:c.8486C>T", "C", "T"),
+	# ("ATM:c.743G>T", "G", "T"),
+	# ("ATM:c.496+5G>A", "G", "A"),
+	# ("ATM:c.2250G>A", "G", "A")
+	# ]
+
+	# output_file = open("atm_variants.tsv", "w+")
+	# output_file.write("variant\taso_prediction\tcoding_impact\tsplicing_impact\n")
+
+	# for variant in variants:
+	# 	print(variant)
+	# 	tup = get_output(variant[0], variant[1], variant[2])
+	# 	output_file.write("{}\t{}\t{}\t{}\n".format(variant[0], tup["aso_prediction"], tup["coding_impact"], tup["splicing_impact"]))
+	# output_file.close()
+
+	# d = {
+	# 	"aso_prediction": aso_prediction,
+	# 	"coding_impact": coding_impact,
+	# 	"splicing_impact": splicing_impact,
+	# 	"sift_score": sift_score,
+	# 	"polyphen_score": polyphen_score,
+	# 	"maxentscan_ref": maxentscan_ref,
+	# 	"maxentscan_alt": maxentscan_alt,
+	# 	"maxentscan_diff": maxentscan_diff,
+	# 	"spliceai_pred": spliceai_pred,
+	# 	"gnomad_variant": gnomad_variant,
+	# 	"cadd_score": cadd_score,
+	# 	"strand": str(strand),
+	# 	"aa_change": aa_change,
+	# 	"codons": codons,
+	# 	"cdna": cdna
+	# }
 
 if __name__== "__main__":
 	main()
