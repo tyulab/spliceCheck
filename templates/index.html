@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block sv_search %}active{% endblock %}
+
+
+{% block main %}
+  <!-- Validate that the form is complete -->
+  <form class="needs-validation" name="varForm" action="/output" onsubmit="return validateForm()" method="post" novalidate>
+    <fieldset>
+      <legend><h1>Enter Your Variant of Interest</h1></legend>
+      <!-- Enter Gene Name -->
+      <div class="form-group">
+        <label for="gene"><h4>Gene :  </h4></label>
+        <input type="text" size = "50" class="form-control" name="gene" placeholder="Official HGNC Gene Symbol, ex. MFSD8 (case sensitive)" required>
+        <div class="invalid-feedback">
+          Please provide the gene name.
+        </div>
+      </div>
+      <!-- Enter cDNA position -->
+      <div class="form-group">
+        <label for="position"><h4>cDNA position :  </h4></label>
+        <input type="text" size ="50" class="form-control" id='position' name="position" placeholder="c.1234" required>
+        <div class="invalid-feedback">
+          Please provide the cDNA coordinates.
+        </div>
+      </div>
+      <!-- Enter cDNA position -->
+      <div class="form-group">
+        <label for="transcript"><h4>Transcript ID :  </h4></label>
+        <input type="text" size ="50" class="form-control" name="transcript" placeholder="Optional, ex. ENST00000639828">
+      </div>
+      <div class = "wrapper" style="max-width: 25rem; display: inline-block;">
+        <!-- Radio buttons for wild type base -->
+        <div class="form-group" name = "wt" style = "float: left; margin-right: 20px;">
+          <label for="wt"><h4>WT base :  </h4></label><br>
+          <input type="radio" name="wt" value="A"> A<br>
+          <input type="radio" name="wt" value="T"> T<br>
+          <input type="radio" name="wt" value="C"> C<br>
+          <input type="radio" name="wt" value="G"> G<br>
+          <input type="radio" name="wt" value="ins"> ins<br>
+          <input type="radio" name="wt" value="del"> del<br>
+        </div>
+        <!-- Radio buttons for mutant base -->
+        <div class="form-group" name = "mut" style = "float: right; margin-left: 20px;">
+          <label for="mut"><h4>Mutant base :  </h4></label><br>
+          <input type="radio" name="mut" value="A"> A<br>
+          <input type="radio" name="mut" value="T"> T<br>
+          <input type="radio" name="mut" value="C"> C<br>
+          <input type="radio" name="mut" value="G"> G<br>
+        </div>
+      </div>
+      <!-- Submit button -->
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBtn">
+        Submit
+      </button>
+    </fieldset>
+  </form>
+
+<script>
+validateIndex();
+</script>
+{% endblock %}

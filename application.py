@@ -34,7 +34,7 @@ def after_request(response):
 
 @app.route("/")
 def index():
-	return render_template("layout.html")
+	return render_template("index.html")
 
 @app.route("/list")
 def list_page():
@@ -62,6 +62,9 @@ def getOutput():
 		return apology("Try fixing the gene name")
 
 	# Check mutation
+	if "ins" in wt or "del" in wt:
+		cdna += wt + mut
+
 	if "del" in cdna or "ins" in cdna:
 		wt, mut = "", ""
 	elif str(wt) == str(mut):
@@ -135,13 +138,14 @@ def getOutputList():
 	file = request.files["file"]
 	file.seek(0)
 	contents = file.read().decode("utf-8")
+	# separate variant by line
 	variant_list = contents.strip().split("\n")
 	scores = []
 	for hgvs in variant_list:
 		res = "0"
 
 		# input checking
-		hgvs_comps = hgvs.strip().split(">")
+		hgvs_comps = hgvs.strip().split(">") # check for substitution
 		if len(hgvs_comps) == 2:
 			wt, mut = hgvs_comps[0][-1], hgvs_comps[1].strip()
 			cdna = hgvs_comps[0][0:-1]
@@ -178,6 +182,8 @@ def getOutputList():
 
 if __name__ == "__main__":
 	app.run(debug=True)
+	# https://stackoverflow.com/questions/47108504/flask-default-port-number
+	app.run(host='0.0.0.0', port=80)
 
 	# # Run VEP on the variant
 	# v = os.popen(' ./tools/ensembl-vep/vep --database -id "%s" -o STDOUT --force --sift s --polyphen s' % hgvs, 'r')

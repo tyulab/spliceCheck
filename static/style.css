@@ -49,6 +49,19 @@ input[type="file"] {
     margin: auto;
 }
 
+.btn-primary {
+    background-color: rgb(90,167,225);
+}
+
+.btn-primary:hover {
+    background-color: rgb(60,134,200);
+}
+
+.btn-primary:active {
+    background-color: rgb(146,102,204);
+}
+
+
 /*label .chooseFile {
     display: block;
     font: 1rem 'Fira Sans', sans-serif;

@@ -4,21 +4,7 @@
     About
 {% endblock %}
 
-{% block bar %}
-  <div class="collapse navbar-collapse" id="navbarColor02">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="/">Single Variant Search<span class="sr-only">(current)</span></a>
-      </li>
-      <li class="nav-item active">
-        <a class="nav-link" href="/list">Variant List Search<span class="sr-only">(current)</span></a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/about">About<span class="sr-only">(current)</span></a>
-      </li>
-    </ul>
-  </div>
-{% endblock %}
+{% block vl_search %}active{% endblock %}
 
 {% block main %}
   <!-- Validate that the form is complete -->
@@ -30,7 +16,7 @@
         <input type="file" id="file" name="file" size="20" accept=".doc,.docx,.txt">
       </div>
       <!-- Submit button -->
-      <button type="submit" class="btn btn-secondary disabled btn-lg btn-block">
+      <button type="submit" class="btn btn-primary btn-lg btn-block">
         Submit
       </button>
     </fieldset>
