@@ -62,8 +62,6 @@ def getOutput():
 		return apology("Try fixing the gene name")
 
 	# Check mutation
-	if "ins" in wt or "del" in wt:
-		cdna += wt + mut
 
 	if "del" in cdna or "ins" in cdna:
 		wt, mut = "", ""
