@@ -1,5 +1,6 @@
 import os
 import requests
+import json
 # import urllib.parse
 import sys
 import operator
@@ -975,12 +976,10 @@ def get_literature(hgvs):
 				literature.append((str(pubmed_id), str(res["result"][pubmed_id]["title"])))		
 			except Exception as e:
 				return []
-			time.sleep(0.2)
 
 	except Exception as e:
 		return []
 
-	time.sleep(0.5)
 	return literature
 
 def get_clinvar(hgvs):
@@ -999,6 +998,200 @@ def get_clinvar(hgvs):
 		return ""
 	except Exception as e:
 		return ""
+
+
+# refseqID: NM_003159
+# ensemblID: ENST00000379996 for cdkl5
+# get output given list of hgvs
+def get_output_list(hgvs, wt="", mut="", transcript=""):
+	"""Call tools to get output"""
+	# Run VEP on the variant
+	# https://rest.ensembl.org/ POST
+	try:
+		server = "https://rest.ensembl.org"
+		ext = "/vep/human/hgvs/"
+		params = {"SpliceAI": True, "MaxEntScan": True, "CADD": True}
+		if transcript:
+			params["transcript_id"] = transcript
+		headers = {"Content-Type": "application/json", "Accept": "application/json"}
+		# format hgvs list for post request
+		postData = json.dumps(hgvs)
+		postData = '{ "hgvs_notations" : ' + postData + ' }'
+		r = requests.post(server+ext, params=params, headers=headers, data=postData)
+
+		if not r.ok:
+			r.raise_for_status()
+			return None
+
+		decoded = r.json()
+		res = decoded # get whole list
+	except Exception as e:
+		print("Could not run VEP: ", e)
+		return None
+	d = []
+	# return list of d
+	for i in range(len(decoded)):
+		d.append(get_output_list_pt2(res[i], hgvs[i], wt[i], mut[i], transcript[i]))
+	return d
+
+
+def get_output_list_pt2(res, hgvs, wt="", mut="", transcript=""):
+	# adjust for strand
+	strand, indel_length, indel_bp = 1, 0, ""
+	for key in res:
+		# print(key, res[key])
+		if (key == "strand" or "strand" in key) and (res[key] == -1):
+			strand = -1
+		if "del" in hgvs and (key == "allele_string" or "allele_string" in key):
+			indel_info = res[key].strip().split("/")
+			indel_length, indel_bp = len(indel_info[0]), str(indel_info[0])
+		elif "ins" in hgvs and (key == "allele_string" or "allele_string" in key):
+			indel_info = res[key].strip().split("/")
+			indel_length, indel_bp = len(indel_info[1]), str(indel_info[1])
+		elif "dup" in hgvs and (key == "allele_string" or "allele_string" in key):
+			indel_info = res[key].strip().split("/")
+			indel_length, indel_bp = len(indel_info[1]), str(indel_info[1])
+	if strand == -1 and len(wt) != 0 and len(mut) != 0:
+		splice_wt, splice_mut = nucleotide_change[wt], nucleotide_change[mut]
+	else:
+		splice_wt, splice_mut = wt, mut
+
+	# find SIFT and Polyphen scores
+	try:
+		sift_score = [False]
+		for item in res["transcript_consequences"]:
+			if "sift_score" in item:
+				sift_score = item["sift_score"]
+				break
+	except Exception as e:
+		print("Could not retrieve sift_score: ", e)
+		sift_score = [False]
+	try:
+		polyphen_score = [False]
+		for item in res["transcript_consequences"]:
+			if "polyphen_score" in item:
+				polyphen_score = item["polyphen_score"]
+				break
+	except Exception as e:
+		print("Could not retrieve polyphen_score: ", e)
+		polyphen_score = [False]
+
+	# find CADD score
+	try:
+		cadd_score = [False]
+		for item in res["transcript_consequences"]:
+			if "cadd_phred" in item:
+				cadd_score = item["cadd_phred"]
+				break
+	except Exception as e:
+		print("Could not retrieve cadd_score: ", e)
+		cadd_score = [False]
+
+	# find these scores (maxentscan, spliceAI)
+	try:
+		maxentscan_ref, ref_found = [False], False
+		maxentscan_alt, alt_found = [False], False
+		maxentscan_diff, diff_found = [False], False
+		spliceai_pred, pred_found = [False], False
+		for item in res["transcript_consequences"]:
+			if "maxentscan_ref" in item and not ref_found:
+				maxentscan_ref = item["maxentscan_ref"]
+				ref_found = True
+			if "maxentscan_alt" in item and not alt_found:
+				maxentscan_alt = item["maxentscan_alt"]
+				alt_found = True
+			if "maxentscan_diff" in item and not diff_found:
+				maxentscan_diff = item["maxentscan_diff"]
+				diff_found = True
+			if "spliceai_pred" in item and not pred_found:
+				spliceai_pred = item["spliceai_pred"]
+				pred_found = True
+	except Exception as e:
+		print("Could not retrieve some MES score: ", e)
+
+	# look for start and chr of mutation
+	try:
+		gen_start = res["start"]
+		gen_start = str(int(gen_start) - 1)  # Adjust for maxentscan perl script
+		if "seq_region_name" in res:
+			gen_chr = res["seq_region_name"]
+		elif "colocated_variants" in res:
+			gen_chr = res["colocated_variants"][0]["seq_region_name"]
+		else:
+			gen_chr = "un"
+	except Exception as e:
+		print("Could not retrieve some needed location information: ", e)
+
+	# look for most severe consequence
+	try:
+		consequence = "Not found"
+		if "most_severe_consequence" in res:
+			consequence = res["most_severe_consequence"]
+	except Exception as e:
+		print("Could not retrieve most severe consequence: ", e)
+
+	# look for amino acid change
+	try:
+		aa_change, codons, cdna = "Not found", "not found", "Not found"
+		for item in res["transcript_consequences"]:
+			if "amino_acids" in item:
+				aa_change = item["amino_acids"]
+			if "codons" in item:
+				codons = item["codons"]
+			if "cdna_start" in item:
+				cdna = item["cdna_start"]
+	except Exception as e:
+		print("Could not retrieve amino acid change: ", e)
+
+	# create gnomad variant string
+	gnomad_variant = ""
+	if gen_chr and gen_start and len(splice_wt) != 0 and len(splice_mut) != 0:
+		gnomad_variant = "{}-{}-{}-{}".format(gen_chr, str(int(gen_start) + 1), splice_wt, splice_mut)
+
+	# # get spliceai prediction from spliceai-lookup and mes scores
+	spliceai_pred = spliceai(gnomad_variant)
+	mes_dict_5 = mes5_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
+	mes_dict_3 = mes3_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
+
+	# Determine if this mutation is amenable
+	coding_impact, splicing_impact, consequence, mes_analyses, spliceai_analyses = determine_impacts(gen_chr, gen_start,
+																									 hgvs, consequence,
+																									 sift_score,
+																									 polyphen_score,
+																									 maxentscan_ref,
+																									 maxentscan_alt,
+																									 maxentscan_diff,
+																									 spliceai_pred,
+																									 mes_dict_5,
+																									 mes_dict_3, strand)
+
+	# IMPT:
+	# mes_analyses is a dictionary that maps key: "key,ref,alt,delta" to a tuple value: (x, y, z) where x=high/moderate/low prob, y=donor/acceptor, z=weakened/strengthened
+	# spliceai_analyses is a dictionary that maps key: "pos_delta,prob_delta" to a tuple value: (x, y), where x=acceptor/donor, y=loss/gain
+	print(mes_analyses, spliceai_analyses)
+
+	aso_prediction = determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, sift_score,
+										   polyphen_score, strand)
+
+	d = {
+		"aso_prediction": aso_prediction,
+		"coding_impact": coding_impact,
+		"splicing_impact": splicing_impact,
+		"sift_score": sift_score,
+		"polyphen_score": polyphen_score,
+		"maxentscan_ref": maxentscan_ref,
+		"maxentscan_alt": maxentscan_alt,
+		"maxentscan_diff": maxentscan_diff,
+		"spliceai_pred": spliceai_pred,
+		"gnomad_variant": gnomad_variant,
+		"cadd_score": cadd_score,
+		"strand": str(strand),
+		"aa_change": aa_change,
+		"codons": codons,
+		"cdna": cdna
+	}
+	return d
+
 
 def main():
 	# tup2 = get_output("NPC1:c.1554-1009G>A", "G", "A")
@@ -1066,238 +1259,4 @@ def main():
 
 if __name__== "__main__":
 	main()
-
-	# output_file = open("../../Downloads/selected_cdkl5.csv", "w+")
-	# output_file.write("mutation,gene_info(consequence/aa_change),coding_impact,splicing_impact,sift_score,polyphen_score,maxentscan_ref/maxentscan_alt/maxentscan_diff,spliceai_pred,wt5mes/mut5mes/wt3mes/mut3mes)\n")
-	# cdkl5 = ["CDKL5:c.404A>G", "CDKL5:c.458A>T", "CDKL5:c.1636G>A", "CDKL5:c.487G>A", "CDKL5:c.821T>G", "CDKL5:c.2684C>T", "CDKL5:c.146-6T>G", "CDKL5:c.2377-8T>A", "CDKL5:c.404-3C>A", "CDKL5:c.99+5G>A"]
-	# for var in cdkl5:
-	# 	mut_info = var.split(">")
-	# 	ref, alt = mut_info[0][-1], mut_info[1]
-	# 	if var and ref and alt:
-	# 		print(var, ref, alt)
-	# 		tup = get_output(var, ref, alt)
-	# 		to_write = "{},{},{},{},{},{},{} {} {},{},{} {} {} {}\n".format(tup[0], tup[13], tup[1], tup[2], tup[3], tup[4], str(tup[5]), str(tup[6]), str(tup[7]), tup[8], str(tup[9]), str(tup[10]), str(tup[11]), str(tup[12]))
-	# 		output_file.write(to_write)
-	# output_file.close()
-
-	# tup = get_output("CLN6:c.679G>A", "G", "A")
-	# print(tup)
-
-# 	# var_file = open("../../Downloads/cdkl.csv", "r+")
-# 	# output_file = open("../../Downloads/cdkl5_mutations_output.csv", "w+")
-# 	# output_file.write("mutation,gene_info(consequence/aa_change),coding_impact,splicing_impact,sift_score,polyphen_score,maxentscan_ref/maxentscan_alt/maxentscan_diff,spliceai_pred,wt5mes/mut5mes/wt3mes/mut3mes)\n")
-# 	# for line in var_file:
-# 	# 	mutation = line.strip().split(",")[0]
-# 	# 	if mutation[0] != "c" and mutation[1] == "c":
-# 	# 		mutation = mutation[1:]
-# 	# 	if ">" not in mutation:
-# 	# 		continue
-# 	# 	mutation = "CDKL5:{}".format(mutation)
-
-# 	# 	# find the nucleotide change
-# 	# 	mut_info = mutation.split(">")
-# 	# 	ref, alt = mut_info[0][-1], mut_info[1]
-
-# 	# 	if mutation and ref and alt:
-# 	# 		print(mutation, ref, alt)
-# 	# 		tup = get_output(mutation, ref, alt)
-# 	# 		to_write = "{},{},{},{},{},{},{} {} {},{},{} {} {} {}\n".format(tup[0], tup[13], tup[1], tup[2], tup[3], tup[4], str(tup[5]), str(tup[6]), str(tup[7]), tup[8], str(tup[9]), str(tup[10]), str(tup[11]), str(tup[12]))
-# 	# 		output_file.write(to_write)
-# 	# var_file.close()
-# 	# output_file.close()
-
-# 	tup = get_output("CDKL5:c.119C>A", "C", "A")
-# 	print(tup)
-# 	# to_write = "{},{},{},{},{},{},{} {} {},{},{} {} {} {}\n".format(tup[0], tup[13], tup[1], tup[2], tup[3], tup[4], str(tup[5]), str(tup[6]), str(tup[7]), tup[8], str(tup[9]), str(tup[10]), str(tup[11]), str(tup[12]))
-# 	# print(to_write)
-		
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	# # Get input and output files from command line args
-	# inputfile = sys.argv[1]
-	# outputfile = sys.argv[2]
-		
-	# # Open files to read/write
-	# infile = open(inputfile, 'r')
-	# outfile = open(outputfile, 'w')
-
-	# # Read variants into a list
-	# lines = [line.rstrip('\n') for line in infile]
-
-	# # Loop through list
-	# for line in lines:
-	# 	out = getOutput(line)
-	# 	outfile.write(line+","+out['sift']+","+out['polyphen']+"\n")
-
-
-	# infile.close()
-	# outfile.close()
-	# Make sure this worked
-	# if len(vep) >= 36:
-
-	# 	# The output is long - we only care about the 35th line
-	# 	vep = ''.join(vep[35])
-	# 	# Split this line up into a list
-	# 	vep = vep.split('\t')
-
-	# 	# The second item in the list is the genomic coordinates chr:number
-	# 	gcoords = vep[1]
-
-	# 	# The last item is a list of scores we care about
-	# 	scores = vep[-1].split(';')
-
-	# 	# The last item in this list is Polyphen -- we just want the score
-	# 	polyP = scores[-1].strip()
-	# 	polyP = polyP.split('=')
-	# 	polyP = float(polyP[-1])
-
-	# 	# The second to last is SIFT -- we just want the score
-	# 	siftScore = scores[-2]
-	# 	siftScore = siftScore.split('=')
-	# 	siftScore = siftScore[-1]
-
-	# 	# gnomAD requires the variant in a specific genomic coordinate form
-	# 	gncoords = gcoords.split(':')
-	# 	#variant = gncoords[0]+'-'+gncoords[1]+'-'+wt+'-'+mut
-	# 	mut = vep[-1]
-
-	# 	# MAX ENT SCAN
-	# 	# Run 5' Max Ent Scan
-	# 	# Get the 9 bp sequence around the mutation
-	# 	me5low = int(gncoords[1])-4
-	# 	me5high = int(gncoords[1])+5
-	# 	me5range = 'chr'+gncoords[0]+":"+str(me5low)+'-'+str(me5high)
-
-		# 	# This just pulls the sequence from an online database
-	# 	f = os.popen('./tools/twoBitToFa http://hgdownload.cse.ucsc.edu/gbdb/hg38/hg38.2bit:%s stdout' % me5range, 'r')
-	# 	# Get the output
-	# 	lst = f.readlines()
-
-	# 	# Make sure this worked
-	# 	if len(lst) < 2:
-	# 	    return apology("Something went wrong. Please re-enter your coordinates %s" % (''.join(lst)))
-
-	# 	# The second value is the sequence
-	# 	seq9 = (lst[1].strip()).lower()
-
-	# 	# Call MaxEntScan 5' on this sequence
-	# 	wt5mes = mes5(seq9)
-
-	# 	# Change the middle value to the mutation
-	# 	seq9m = seq9[0:4]+mut+seq9[6:9]
-	# 	# Call MaxEntScan 5' on this mutant seq
-	# 	mut5mes = mes5(seq9)
-
-		# 	# Run 3' Max Ent Scan
-	# 	# Get the  bp sequence around the mutation
-	# 	me23low = int(gncoords[1])-11
-	# 	me23high = int(gncoords[1])+12
-	# 	me23range = 'chr'+gncoords[0]+":"+str(me23low)+'-'+str(me23high)
-
-	# 	# This just pulls the sequence from an online database
-	# 	f = os.popen('./tools/twoBitToFa http://hgdownload.cse.ucsc.edu/gbdb/hg19/hg19.2bit:%s stdout' % me23range, 'r')
-	# 	# Get the output
-	# 	lst2 = f.readlines()
-
-	# 	# Make sure this worked
-	# 	if len(lst2) < 2:
-	# 	    return apology("Something went wrong. Please re-enter your coordinates%s" % (''.join(lst2)))
-
-	# 	# The second value is the sequence
-	# 	seq23 = lst2[1].strip().lower()
-
-	# 	# Call MaxEntScan 5' on this sequence
-	# 	wt3mes = mes3(seq23)
-
-	# 	# Change the middle value to the mutation
-	# 	seq23m = seq23[0:11]+mut+seq23[13:23]
-	# 	# Call MaxEntScan 5' on this mutant seq
-	# 	mut3mes = mes3(seq23)
-
-	# # Go to the page
-	# #return render_template("output.html", vep_output=scores, gene_id=gene, var=variant, ans=answer,
-	# #wt5=wt5mes, wt3=wt3mes, mut5=mut5mes, mut3=mut3mes)
-
-	# # Return output
-	# d = {}
-	# d['sift'] = siftScore
-	# d['polyphen'] = polyP
-	# d['ans'] = answer
-	# d['wt5'] = wt5mes
-	# d['wt3'] = wt3mes
-	# d['mut5'] = mut5mes
-	# d['mut3'] = mut3mes
-
-	# return d
-
-
-
-
-	# if type(sift) is list:
-	# 	print("gotcha")
-	# if type(polyphen) is list:
-	# 	print("woooo")
-
-	# if type(sift_score) is list and type(polyphen_score) is list:
-	# 	return ("Intronic splice site: no SIFT or PolyPhen score found.")
-
-	# if type(maxentscan_diff) is list:
-	# 	# has polyphen score but no sift score
-	# 	if type(sift_score) is list and type(polyphen_score) is not list:
-	# 		if polyphen_score < 0.5 and (float(wt5mes) < float(mut5mes) or float(wt3mes) < float(mut3mes)):
-	# 			return ("This mutation could possibly be amenable but no SIFT score was found.")
-	# 		else:
-	# 			return ("It's unlikely this mutation is amenable.")
-	# 	# has sift score but no polyphen score
-	# 	elif type(sift_score) is not list and type(polyphen_score) is list:
-	# 		if sift_score > 0.05 and (float(wt5mes) < float(mut5mes) or float(wt3mes) < float(mut3mes)):
-	# 			return ("This mutation could possibly be amenable but no PolyPhen score was found.")
-	# 		else:
-	# 			return ("It's unlikely this mutation is amenable.")
-	# 	else:
-	# 		if sift_score > 0.05 and polyphen_score < 0.5 and (float(wt5mes) < float(mut5mes) or float(wt3mes) < float(mut3mes)):
-	# 			return ("This mutation could possibly be amenable.")
-	# 		else:
-	# 			return ("It's unlikely this mutation is amenable.")
-	# else:
-	# 	# has polyphen score but no sift score
-	# 	if type(sift_score) is list and type(polyphen_score) is not list:
-	# 		if polyphen_score < 0.5 and maxentscan_diff >= 3:
-	# 			return ("This mutation could possibly be amenable but no SIFT score was found.")
-	# 		else:
-	# 			return ("It's unlikely this mutation is amenable.")
-	# 	# has sift score but no polyphen score
-	# 	elif type(sift_score) is not list and type(polyphen_score) is list:
-	# 		if sift_score > 0.05 and maxentscan_diff >= 3:
-	# 			return ("This mutation could possibly be amenable but no PolyPhen score was found.")
-	# 		else:
-	# 			return ("It's unlikely this mutation is amenable.")
-	# 	else:
-	# 		if sift_score > 0.05 and polyphen_score < 0.5 and maxentscan_diff >= 3:
-	# 			return ("This mutation could possibly be amenable.")
-	# 		else:
-	# 			return ("It's unlikely this mutation is amenable.")
-
 

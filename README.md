@@ -1,4 +1,6 @@
 # [Splice Check](http://aso-amenable.ue.r.appspot.com/)
+(If test version is broken, please use the above link instead.)
+
 
 12/7 - fixed a minor typo in one of the helper functions that affects the output (had < instead of >)
 
@@ -11,4 +13,4 @@ The output page will give you links to information about the gene
 and mutation as well as a prediction of whether or not it could be treated with antisense oligonucleotide
 gene therapy.
 
-### [(current test version)](http://splicechecktest2-env.eba-ctgctjyy.us-east-1.elasticbeanstalk.com/)
+#### [(current test version)](http://splicechecktest2-env.eba-ctgctjyy.us-east-1.elasticbeanstalk.com/)
