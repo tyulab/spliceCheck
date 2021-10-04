@@ -1002,8 +1002,14 @@ def get_clinvar(hgvs):
 
 # refseqID: NM_003159
 # ensemblID: ENST00000379996 for cdkl5
-# get output given list of hgvs
+# get output given list of hgvs, wts, muts, transcript (?)
 def get_output_list(hgvs, wt="", mut="", transcript=""):
+	if wt == "":
+		wt = [""] * len(hgvs)
+	if mut == "":
+		mut = [""] * len(hgvs)
+	if transcript == "":
+		transcript = [""] * len(hgvs)
 	"""Call tools to get output"""
 	# Run VEP on the variant
 	# https://rest.ensembl.org/ POST
