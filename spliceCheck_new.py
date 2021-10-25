@@ -413,7 +413,7 @@ def determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, si
 
 	sift_threshold = 0.05
 	polyphen_threshold = 0.85
-	deep_intron_threshold = 50	# Taken from the SpliceAI paper
+	deep_intron_threshold = 50 # Taken from the SpliceAI paper
 	aso_amenability = ""
 	intron, intron_depth = False, ""
 
@@ -1004,6 +1004,8 @@ def get_clinvar(hgvs):
 # ensemblID: ENST00000379996 for cdkl5
 # get output given list of hgvs, wts, muts, transcript (?)
 def get_output_list(hgvs, wt="", mut="", transcript=""):
+	# clear carriage return
+	hgvs = [i.strip() for i in hgvs]
 	if wt == "":
 		wt = [""] * len(hgvs)
 	if mut == "":
@@ -1023,6 +1025,7 @@ def get_output_list(hgvs, wt="", mut="", transcript=""):
 		# format hgvs list for post request
 		postData = json.dumps(hgvs)
 		postData = '{ "hgvs_notations" : ' + postData + ' }'
+		# print(postData)
 		r = requests.post(server+ext, params=params, headers=headers, data=postData)
 
 		if not r.ok:
@@ -1040,7 +1043,7 @@ def get_output_list(hgvs, wt="", mut="", transcript=""):
 		d.append(get_output_list_pt2(res[i], hgvs[i], wt[i], mut[i], transcript[i]))
 	return d
 
-
+# temporary function contains rest of original for loop in get_output
 def get_output_list_pt2(res, hgvs, wt="", mut="", transcript=""):
 	# adjust for strand
 	strand, indel_length, indel_bp = 1, 0, ""
