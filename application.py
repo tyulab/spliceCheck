@@ -3,6 +3,7 @@ import asyncio
 import requests
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, send_file
+import os
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
@@ -211,9 +212,12 @@ def getOutputList():
 
 
 if __name__ == "__main__":
+    # context = ('server.crt', 'privatekey.pem')  # certificate and key files
     app.run(debug=True)
+    # app.run(debug=True, port=443)
+    # app.run(debug=True, ssl_context=context)
     # https://stackoverflow.com/questions/47108504/flask-default-port-number
-    app.run(host='0.0.0.0', port=80)
+    # app.run(host='0.0.0.0', port=80)
 
 # # Run VEP on the variant
 # v = os.popen(' ./tools/ensembl-vep/vep --database -id "%s" -o STDOUT --force --sift s --polyphen s' % hgvs, 'r')

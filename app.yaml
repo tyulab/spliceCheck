@@ -6,3 +6,4 @@ handlers:
   static_dir: static
 - url: /.*
   script: auto
+  secure: always

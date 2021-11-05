@@ -85,7 +85,7 @@ def spliceai(gnomad):
 		server = "https://spliceailookup-api.broadinstitute.org/"
 		get = "spliceai/"
 		params = {"hg": 38, "distance":50, "variant":gnomad}	# change to 5000 for ATM project
-		r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"})
+		r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"}, verify=False)
 
 		if not r.ok:
 			r.raise_for_status()
@@ -307,7 +307,7 @@ def mes5_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length=0, indel_bp=
 			server = "http://api.genome.ucsc.edu"
 			get = "/getData/sequence"
 			params = {"chrom": "chr{}".format(gen_chr), "genome": "hg38", "start": mes5low, "end": mes5high}
-			r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"})
+			r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"}, verify=True)
 			if not r.ok:
 				r.raise_for_status()
 				return {}
@@ -782,12 +782,12 @@ def get_output(hgvs, wt="", mut="", transcript=""):
 	# Run VEP on the variant
 
 	try:
-		server = "https://rest.ensembl.org"
+		server = "http://rest.ensembl.org"
 		get = "/vep/human/hgvs/" + hgvs
 		params = {"SpliceAI": True, "MaxEntScan": True, "CADD": True}
 		if transcript:
 			params["transcript_id"] = transcript
-		r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"})
+		r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"}, verify=False)
 
 		if not r.ok:
 			r.raise_for_status()
@@ -1016,7 +1016,7 @@ def get_output_list(hgvs, wt="", mut="", transcript=""):
 	# Run VEP on the variant
 	# https://rest.ensembl.org/ POST
 	try:
-		server = "https://rest.ensembl.org"
+		server = "http://rest.ensembl.org"
 		ext = "/vep/human/hgvs/"
 		params = {"SpliceAI": True, "MaxEntScan": True, "CADD": True}
 		if transcript:
@@ -1034,6 +1034,7 @@ def get_output_list(hgvs, wt="", mut="", transcript=""):
 
 		decoded = r.json()
 		res = decoded # get whole list
+
 	except Exception as e:
 		print("Could not run VEP: ", e)
 		return None
