@@ -492,7 +492,7 @@ def determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, si
 					if mes_analyses[entry][2] == 1 and spliceai_analyses[spliceai_key][1] == 1 and int(mes_analyses[entry][1]) == int(spliceai_analyses[spliceai_key][0]):	# both SpliceAI and MES indicate strengthening, and referring to same site
 						combined_count += 1
 		#emsherr edit
-                if coding_impact = "SIFT and PolyPhen scores predict that the mutation is deleterious.":
+                if coding_impact == "SIFT and PolyPhen scores predict that the mutation is deleterious.":
                         if mes_count == 0 and combined_count == 0:
                                 aso_amenability = "It's unlikely this variant is ASO-amenable. MES and SpliceAI analysis both do not predict any new sites being created/strengthened. {}".format(coding_impact)
                         elif mes_count > 0 and combined_count == 0:
@@ -746,7 +746,7 @@ def determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, si
 							if spliceai_analyses[spliceai_key][1] == 1:	# found that canonical splice site is likely being weakened
 								for second_run in spliceai_analyses:	# look for any other results that indicate a strengthening/creation of a new site
 									pos_gain = second_run.split(":")[0]
-									if splice_analyses[second_run][1] == 1: # found another spliceai result that indicates a new site is being used
+									if spliceai_analyses[second_run][1] == 1: # found another spliceai result that indicates a new site is being used
 										if int(pos_gain) + intron_depth >= 10:
 											aso_amenability = "This variant is probably ASO-amenable. Using SpliceAI, we analyzed that the canonical splite site is being weakened while a new splice site is being created/strengthened more than 10bp away from the original."
 										else:
@@ -833,17 +833,17 @@ def determine_amenability_jinkuk(mes_analyses, spliceai_analyses, hgvs, conseque
 			for m_entry in mes_analyses:
 				if float(m_entry.split(":")[1]) >= 2 and float(m_entry.split(":")[1]) >= (0.03 * float(m_entry.split(":")[0])):
 					new_impact = 2
-					if new_impact <= slicing_impact_numerical:
+					if new_impact <= splicing_impact_numerical:
 						splicing_impact_numerical = new_impact
 		elif spliceai_analyses[entry][1] == 0 and float(entry.split(":")[1]) >= 0.1:	# strong/incomplete and complete damage
 			for m_entry in mes_analyses:
 				if float(m_entry.split(":")[1]) >= 2 and float(m_entry.split(":")[1]) >= (0.03 * float(m_entry.split(":")[0])):	# strong/incomplete
 					new_impact = 1
-					if new_impact <= slicing_impact_numerical:
+					if new_impact <= splicing_impact_numerical:
 						splicing_impact_numerical = new_impact
 				elif float(m_entry.split(":")[1]) < 2 or float(m_entry.split(":")[1]) < (0.03 * float(m_entry.split(":")[0])):	# complete damage
 					new_impact = 1
-					if new_impact <= slicing_impact_numerical:
+					if new_impact <= splicing_impact_numerical:
 						splicing_impact_numerical = new_impact
 
 # refseqID: NM_003159

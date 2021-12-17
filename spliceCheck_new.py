@@ -762,17 +762,17 @@ def determine_amenability_jinkuk(mes_analyses, spliceai_analyses, hgvs, conseque
 			for m_entry in mes_analyses:
 				if float(m_entry.split(":")[1]) >= 2 and float(m_entry.split(":")[1]) >= (0.03 * float(m_entry.split(":")[0])):
 					new_impact = 2
-					if new_impact <= slicing_impact_numerical:
+					if new_impact <= splicing_impact_numerical:
 						splicing_impact_numerical = new_impact
 		elif spliceai_analyses[entry][1] == 0 and float(entry.split(":")[1]) >= 0.1:	# strong/incomplete and complete damage
 			for m_entry in mes_analyses:
 				if float(m_entry.split(":")[1]) >= 2 and float(m_entry.split(":")[1]) >= (0.03 * float(m_entry.split(":")[0])):	# strong/incomplete
 					new_impact = 1
-					if new_impact <= slicing_impact_numerical:
+					if new_impact <= splicing_impact_numerical:
 						splicing_impact_numerical = new_impact
 				elif float(m_entry.split(":")[1]) < 2 or float(m_entry.split(":")[1]) < (0.03 * float(m_entry.split(":")[0])):	# complete damage
 					new_impact = 1
-					if new_impact <= slicing_impact_numerical:
+					if new_impact <= splicing_impact_numerical:
 						splicing_impact_numerical = new_impact
 
 # refseqID: NM_003159

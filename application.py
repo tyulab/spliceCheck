@@ -8,7 +8,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
-from spliceCheck_new import *
+from spliceCheck_new_es import *
 from helpers import apology
 
 # Configure application
@@ -141,73 +141,122 @@ def getOutput():
 
 @app.route("/outputFile", methods=["POST"])
 def getOutputList():
-    # Get user input from form
-    file = request.files["file"]
-    file.seek(0)
-    contents = file.read().decode("utf-8")
-    # separate variant by line
-    variant_list = contents.strip().split("\n")
+	# Get user input from form
+	file = request.files["file"]
+	file.seek(0)
+	contents = file.read().decode("utf-8")
+	variant_list = contents.strip().split("\n")
+	scores = []
+	for hgvs in variant_list:
+		res = "0"
 
-    # initialize list of results to value "0"
-    res = ["0" for _ in range(len(variant_list))]
-    # empty scores list
-    scores = []
-    # empty input lists (match to input of get_output
-    hgvs_list = []
-    wt_list = []
-    mut_list = []
+		# input checking
+		hgvs_comps = hgvs.strip().split(">")
+		if len(hgvs_comps) == 2:
+			wt, mut = hgvs_comps[0][-1], hgvs_comps[1].strip()
+			cdna = hgvs_comps[0][0:-1]
+			if len(cdna.strip().split(":")) != 2:
+				res = "1"
+			elif cdna.strip().split(".")[0][-1] != "c":
+				res = "1"
+			if str(wt) == str(mut):
+				res = "1"
+		elif len(hgvs_comps) == 1:   # insertions/deletions/duplications - frameshift
+			wt, mut = "", ""
+			if len(hgvs_comps[0].strip().split(":")) != 2:
+				res = "1"
+			elif hgvs_comps[0].strip().split(".")[0][-1] != "c":
+				res = "1"
+			elif "dup" not in hgvs and "del" not in hgvs and "ins" not in hgvs:
+				res = "1"
+		else:
+			res = "1"
 
-    # input checking for loop
-    for i, hgvs in enumerate(variant_list):
+		if res == "1":
+			scores.append((hgvs, "Please double check that the mutation was inputted correctly."))
+		else:
+			res = get_output(hgvs, wt, mut)
+			if not res:
+				scores.append((hgvs, "Could not run VEP on this variant. Please double check that the mutation was inputted correctly."))
+			else:
+				for key in res: # change [False] to "None found"
+					if type(res[key]) is list:
+						res[key] = "None found."
+				str_result = "coding_impact: {} | splicing_impact: {} | SIFT: {} | PolyPhen: {} | VEP MaxEntScan Ref: {} | VEP MaxEntScan Alt: {} | VEP MaxEntScan Diff: {} | SpliceAI: {} | gnomad_variant: {} ".format(res["coding_impact"], res["splicing_impact"], res["sift_score"], res["polyphen_score"], res["maxentscan_ref"], res["maxentscan_alt"], res["maxentscan_diff"], res["spliceai_pred"], res["gnomad_variant"])
+				scores.append((hgvs, str_result))
+	return render_template("outputFile.html", vep_output=scores)
 
-        # input checking
-        hgvs_comps = hgvs.strip().split(">")  # check for substitution
-        if len(hgvs_comps) == 2:
-            wt, mut = hgvs_comps[0][-1], hgvs_comps[1].strip()
-            cdna = hgvs_comps[0][0:-1]
-            if len(cdna.strip().split(":")) != 2:
-                res[i] = "1"
-            elif cdna.strip().split(".")[0][-1] != "c":
-                res[i] = "1"
-            if str(wt) == str(mut):
-                res[i] = "1"
-        elif len(hgvs_comps) == 1:  # insertions/deletions/duplications - frameshift
-            wt, mut = "", ""
-            if len(hgvs_comps[0].strip().split(":")) != 2:
-                res[i] = "1"
-            elif hgvs_comps[0].strip().split(".")[0][-1] != "c":
-                res[i] = "1"
-            elif "dup" not in hgvs and "del" not in hgvs and "ins" not in hgvs:
-                res[i] = "1"
-        else:
-            res[i] = "1"
-        # if it fails add failure text to scores output: # TODO: it will out of order, if it matters
-        if res[i] == "1":
-            scores.append((hgvs, "Please double check that the mutation was inputted correctly."))
-        # else add to splicecheck_input
-        else:
-            hgvs_list.append(hgvs)
-            wt_list.append(wt)
-            mut_list.append(mut)
 
-    # for all input ready to execute, run get_output_list
-    output_res = get_output_list(hgvs_list, wt_list, mut_list)
-
-    for i, result in enumerate(output_res):
-        if not result:
-            scores.append((hgvs_list[i],
-                           "Could not run VEP on this variant. Please double check that the mutation was inputted correctly."))
-        else:
-            for key in result:  # change [False] to "None found"
-                if type(result[key]) is list:
-                    result[key] = "None found."
-            str_result = "coding_impact: {} | splicing_impact: {} | SIFT: {} | PolyPhen: {} | VEP MaxEntScan Ref: {} | VEP MaxEntScan Alt: {} | VEP MaxEntScan Diff: {} | SpliceAI: {} | gnomad_variant: {} ".format(
-                result["coding_impact"], result["splicing_impact"], result["sift_score"], result["polyphen_score"],
-                result["maxentscan_ref"], result["maxentscan_alt"], result["maxentscan_diff"], result["spliceai_pred"],
-                result["gnomad_variant"])
-            scores.append((hgvs_list[i], str_result))
-
-    return render_template("outputFile.html", vep_output=scores)
+#
+# # need to fix
+# def getOutputList2():
+#     # Get user input from form
+#     file = request.files["file"]
+#     file.seek(0)
+#     contents = file.read().decode("utf-8")
+#     # separate variant by line
+#     variant_list = contents.strip().split("\n")
+#
+#     # initialize list of results to value "0"
+#     res = ["0" for _ in range(len(variant_list))]
+#     # empty scores list
+#     scores = []
+#     # empty input lists (match to input of get_output
+#     hgvs_list = []
+#     wt_list = []
+#     mut_list = []
+#
+#     # input checking for loop
+#     for i, hgvs in enumerate(variant_list):
+#
+#         # input checking
+#         hgvs_comps = hgvs.strip().split(">")  # check for substitution
+#         if len(hgvs_comps) == 2:
+#             wt, mut = hgvs_comps[0][-1], hgvs_comps[1].strip()
+#             cdna = hgvs_comps[0][0:-1]
+#             if len(cdna.strip().split(":")) != 2:
+#                 res[i] = "1"
+#             elif cdna.strip().split(".")[0][-1] != "c":
+#                 res[i] = "1"
+#             if str(wt) == str(mut):
+#                 res[i] = "1"
+#         elif len(hgvs_comps) == 1:  # insertions/deletions/duplications - frameshift
+#             wt, mut = "", ""
+#             if len(hgvs_comps[0].strip().split(":")) != 2:
+#                 res[i] = "1"
+#             elif hgvs_comps[0].strip().split(".")[0][-1] != "c":
+#                 res[i] = "1"
+#             elif "dup" not in hgvs and "del" not in hgvs and "ins" not in hgvs:
+#                 res[i] = "1"
+#         else:
+#             res[i] = "1"
+#         # if it fails add failure text to scores output: # TODO: it will out of order, if it matters
+#         if res[i] == "1":
+#             scores.append((hgvs, "Please double check that the mutation was inputted correctly."))
+#         # else add to splicecheck_input
+#         else:
+#             hgvs_list.append(hgvs)
+#             wt_list.append(wt)
+#             mut_list.append(mut)
+#
+#     # for all input ready to execute, run get_output_list
+#     output_res = get_output_list(hgvs_list, wt_list, mut_list)
+#
+#     for i, result in enumerate(output_res):
+#         if not result:
+#             scores.append((hgvs_list[i],
+#                            "Could not run VEP on this variant. Please double check that the mutation was inputted correctly."))
+#         else:
+#             for key in result:  # change [False] to "None found"
+#                 if type(result[key]) is list:
+#                     result[key] = "None found."
+#             str_result = "coding_impact: {} | splicing_impact: {} | SIFT: {} | PolyPhen: {} | VEP MaxEntScan Ref: {} | VEP MaxEntScan Alt: {} | VEP MaxEntScan Diff: {} | SpliceAI: {} | gnomad_variant: {} ".format(
+#                 result["coding_impact"], result["splicing_impact"], result["sift_score"], result["polyphen_score"],
+#                 result["maxentscan_ref"], result["maxentscan_alt"], result["maxentscan_diff"], result["spliceai_pred"],
+#                 result["gnomad_variant"])
+#             scores.append((hgvs_list[i], str_result))
+#
+#     return render_template("outputFile.html", vep_output=scores)
 
 
 
