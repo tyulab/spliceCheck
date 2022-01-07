@@ -6,6 +6,7 @@ import sys
 import operator
 import time
 import asyncio
+import grequests
 
 nucleotide_change = {"A": "T", "T": "A", "C": "G", "G": "C"}
 

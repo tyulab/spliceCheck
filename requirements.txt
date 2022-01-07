@@ -2,3 +2,4 @@ Flask
 Flask-Session
 requests
 asyncio
+grequests

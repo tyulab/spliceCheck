@@ -492,75 +492,73 @@ def determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, si
 					if mes_analyses[entry][2] == 1 and spliceai_analyses[spliceai_key][1] == 1 and int(mes_analyses[entry][1]) == int(spliceai_analyses[spliceai_key][0]):	# both SpliceAI and MES indicate strengthening, and referring to same site
 						combined_count += 1
 		#emsherr edit
-                if coding_impact == "SIFT and PolyPhen scores predict that the mutation is deleterious.":
-                        if mes_count == 0 and combined_count == 0:
-                                aso_amenability = "It's unlikely this variant is ASO-amenable. MES and SpliceAI analysis both do not predict any new sites being created/strengthened. {}".format(coding_impact)
-                        elif mes_count > 0 and combined_count == 0:
-                                if likely_count == 0:
-                                        aso_amenability = "It's unlikely that this variant is ASO-amenable. Between MES and SpliceAI, only MES predicts a low probability that a new splice site is being created/strengthened and. {}".format(coding_impact)
-                                else:
-                                        aso_amenability = "It's unlikely that this variant is ASO-amenable. MES alone predicts a moderate/high probability that a new splice site is being created/strengthened and. {}".format(coding_impact)
-                        else:
-                                aso_amenability = "It's unlikely that this variant is ASO-amenable. MES and SpliceAI both predict that new sites are being created/strengthened, but. {}".format(coding_impact)
+		if coding_impact == "SIFT and PolyPhen scores predict that the mutation is deleterious.":
+			if mes_count == 0 and combined_count == 0:
+				aso_amenability = "It's unlikely this variant is ASO-amenable. MES and SpliceAI analysis both do not predict any new sites being created/strengthened. {}".format(coding_impact)
+			elif mes_count > 0 and combined_count == 0:
+				if likely_count == 0:
+					aso_amenability = "It's unlikely that this variant is ASO-amenable. Between MES and SpliceAI, only MES predicts a low probability that a new splice site is being created/strengthened and. {}".format(coding_impact)
+				else:
+					aso_amenability = "It's unlikely that this variant is ASO-amenable. MES alone predicts a moderate/high probability that a new splice site is being created/strengthened and. {}".format(coding_impact)
+			else:
+				aso_amenability = "It's unlikely that this variant is ASO-amenable. MES and SpliceAI both predict that new sites are being created/strengthened, but. {}".format(coding_impact)
+		else:
+			if mes_count == 0 and combined_count == 0:
+				aso_amenability = "It's unlikely this variant is ASO-amenable. MES and SpliceAI analysis both do not predict any new sites being created/strengthened. {}".format(coding_impact)
+			elif mes_count > 0 and combined_count == 0:
+				if likely_count == 0:
+					aso_amenability = "It's possible that this variant is ASO-amenable. Between MES and SpliceAI, only MES predicts a low probability that a new splice site is being created/strengthened. {}".format(coding_impact)
+				else:
+					aso_amenability = "This variant is probably ASO-amenable. MES alone predicts a moderate/high probability that a new splice site is being created/strengthened. {}".format(coding_impact)
+			else:
+				aso_amenability = "This variant is probabaly ASO-amenable. MES and SpliceAI both predict that new sites are being created/strengthened. {}".format(coding_impact)
 
-                else:
-                        if mes_count == 0 and combined_count == 0:
-                                aso_amenability = "It's unlikely this variant is ASO-amenable. MES and SpliceAI analysis both do not predict any new sites being created/strengthened. {}".format(coding_impact)
-                        elif mes_count > 0 and combined_count == 0:
-                                if likely_count == 0:
-                                        aso_amenability = "It's possible that this variant is ASO-amenable. Between MES and SpliceAI, only MES predicts a low probability that a new splice site is being created/strengthened. {}".format(coding_impact)
-                                else:
-                                        aso_amenability = "This variant is probably ASO-amenable. MES alone predicts a moderate/high probability that a new splice site is being created/strengthened. {}".format(coding_impact)
-                        else:
-                                aso_amenability = "This variant is probabaly ASO-amenable. MES and SpliceAI both predict that new sites are being created/strengthened. {}".format(coding_impact)
+		#emsherr edit - check canonical here
+		try:
+			first_key = str(next(iter(mes_analyses)))
+		except Exception as e:
+			first_key = None
+		if len(mes_analyses) == 1 and first_key and (len(first_key.split(":")) == 3 or len(first_key.split(":")) != 4):	# if VEP's MES results
+			# Try to find canonical impact through SpliceAI results
+			analyzed_canonical = False
+			for spliceai_key in spliceai_analyses:
+				if (strand * float(spliceai_key.split(":")[0])) == float(intron_depth):	# found canonical impact in spliceai results
+					analyzed_canonical = True
+					if spliceai_analyses[spliceai_key][1] == 0:	# if canonical site is found to be weakened, check MES result or other spliceai results to see if there is a site being strengthened nearby
 
+						# first check if is destroyed - use Jinkuk's criteria to see if spliceAI returns >0.5 prob that it is weakened
+						if float(spliceai_key.split(":")[1]) > 0.5:
+							aso_amenability += " In addition, SpliceAI analysis predicts that the canonical splice site is most likely destroyed."
+							break
 
-                #emsherr edit - check canonical here
-                try:
-                        first_key = str(next(iter(mes_analyses)))
-                except Exception as e:
-                        first_key = None
-                if len(mes_analyses) == 1 and first_key and (len(first_key.split(":")) == 3 or len(first_key.split(":")) != 4):	# if VEP's MES results
-                        # Try to find canonical impact through SpliceAI results
-                        analyzed_canonical = False
-                        for spliceai_key in spliceai_analyses:
-                                if (strand * float(spliceai_key.split(":")[0])) == float(intron_depth):	# found canonical impact in spliceai results
-                                        analyzed_canonical = True
-                                        if spliceai_analyses[spliceai_key][1] == 0:	# if canonical site is found to be weakened, check MES result or other spliceai results to see if there is a site being strengthened nearby
+						else:
+							aso_amenability += " In addition, SpliceAI analysis predicts that the canonical splice site is being weakened."
+					else:
+						aso_amenability += " In addition, SpliceAI analysis predicts that the canonical splice site is not being weakened."
 
-                                                # first check if is destroyed - use Jinkuk's criteria to see if spliceAI returns >0.5 prob that it is weakened
-                                                if float(spliceai_key.split(":")[1]) > 0.5:
-                                                        aso_amenability += " In addition, SpliceAI analysis predicts that the canonical splice site is most likely destroyed."
-                                                        break
+		# If we have MES results from Perl, check if the canonical splice site is still intact - look for a MES signal at the canonical splice site
+		analyzed_canonical = False
+		for entry in mes_analyses:
+			pos = entry.split(":")[0]
+			if abs(int(pos)) == abs(intron_depth) and intron_depth * -1 == int(pos):	# need to be opposite signs and equal position to assess the canonical splice site
+				analyzed_canonical = True
+				if mes_analyses[entry][2] == 0 or float(entry.split(":")[3]) < 4.00:	# The canonical site is predicted to be weakened
 
-                                                else:
-                                                        aso_amenability += " In addition, SpliceAI analysis predicts that the canonical splice site is being weakened."
-                                        else:
-                                                aso_amenability += " In addition, SpliceAI analysis predicts that the canonical splice site is not being weakened."
+					# destroyed - not amenable
+					if float(entry.split(":")[2]) <= 3.00:
+						aso_amenability += " Using MES, we analyzed that the canonical splice site is likely destroyed."
+						break
+					else:
+						aso_amenability += " In addition, MES predicts that the canonical splice site is being weakened."
 
-                # If we have MES results from Perl, check if the canonical splice site is still intact - look for a MES signal at the canonical splice site
-                analyzed_canonical = False
-                for entry in mes_analyses:
-                        pos = entry.split(":")[0]
-                        if abs(int(pos)) == abs(intron_depth) and intron_depth * -1 == int(pos):	# need to be opposite signs and equal position to assess the canonical splite site
-                                analyzed_canonical = True
-                                if mes_analyses[entry][2] == 0 or float(entry.split(":")[3]) < 4.00:	# The canonical site is predicted to be weakened
+				# canonical site is not weakened - check to see if it's destroyed
+				else:
+					if float(entry.split(":")[2]) <= 4.00:
+						aso_amenability += " Using MES, we analyzed that the canonical splice site is likely destroyed."
+						break
+					else:
+						aso_amenability += " In addition, MES predicts that the canonical splice site is not being weakened."
 
-                                        # destroyed - not amenable
-                                        if float(entry.split(":")[2]) <= 3.00:
-                                                aso_amenability += " Using MES, we analyzed that the canonical splice site is likely destroyed."
-                                                break
-                                        else:
-                                                aso_amenability += " In addition, MES predicts that the canonical splice site is being weakened."
-
-                                # canonical site is not weakened - check to see if it's destroyed 
-                                else:
-                                        if float(entry.split(":")[2]) <= 4.00:
-                                                aso_amenability += " Using MES, we analyzed that the canonical splice site is likely destroyed."
-                                                break
-                                        else:
-                                                aso_amenability += " In addition, MES predicts that the canonical splice site is not being weakened."
-                
                 
 	# Step 3: Go through MES/Splice AI for analysis
 	else:
@@ -602,8 +600,8 @@ def determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, si
 				# noting was found about the canonical site from SpliceAI
 				if not analyzed_canonical:
 					if abs(intron_depth) <= 10:	# Less than 10bp away from exon start/end, so unlikely
-                                                #emsherr edit - check mes even if less than 10bp away
-                                                if mes_analyses[first_key][2] == 1: # if found to be strengthened
+						#emsherr edit - check mes even if less than 10bp away
+						if mes_analyses[first_key][2] == 1: # if found to be strengthened
 							if mes_analyses[first_key][0] == 2 or mes_analyses[first_key][0] == 1 or float(first_key.split(":")[2]) < -3.00:	# high/moderate probability or delta < -3.00 (VEP uses a different diff calculation)
 								aso_amenability = "It's possible that this variant is ASO-amenable, as VEP's MES results predict a high/moderate probability that a new site is being created/strengthened, but this variant is within 10bp of a canonical splice site."
 							else:
@@ -612,7 +610,7 @@ def determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, si
 								if spliceai_analyses[spliceai_key][1] == 1:	# if spliceAI also finds a site increasing nearby
 									aso_amenability += " SpliceAI also predicts a site being strengthened nearby."
 						else:
-                                                        aso_amenability = "It's unlikely that this variant is ASO-amenable, as this variant is within 10bp of a canonical splice site and no extensive MES results were found."
+							aso_amenability = "It's unlikely that this variant is ASO-amenable, as this variant is within 10bp of a canonical splice site and no extensive MES results were found."
 					else:
 						if mes_analyses[first_key][2] == 1: # if found to be strengthened
 							if mes_analyses[first_key][0] == 2 or mes_analyses[first_key][0] == 1 or float(first_key.split(":")[2]) < -3.00:	# high/moderate probability or delta < -3.00 (VEP uses a different diff calculation)
