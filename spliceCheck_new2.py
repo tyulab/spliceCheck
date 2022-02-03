@@ -1167,10 +1167,18 @@ def get_output_list(hgvs, wt="", mut="", transcript=""):
         print("Could not run VEP: ", e)
         return None
     d = []
+    variants = []
     # return list of d
     # TODO: fix temp iterate through VEP results to get the rest of the output
     for i in range(len(res)):
-        d.append(get_output_list_pt2(res[i], hgvs[i], wt[i], mut[i], transcript[i]))
+        # add to list of variant dicts
+        variants.append(get_output_list_pt2(res[i], hgvs[i], wt[i], mut[i], transcript[i]))
+    # run spliceai, mes, and determine impacts
+    splice_preds = list_spliceai(variants)
+    for i in range(len(variants)):
+        variants[i]["spliceai_pred"] = splice_preds[i]
+
+
     return d
 
 
@@ -1251,14 +1259,7 @@ def get_output_list_pt2(res, hgvs, wt="", mut="", transcript=""):
 
     # look for start and chr of mutation
     try:
-        gen_start = res["start"]
-        gen_start = str(int(gen_start) - 1)  # Adjust for maxentscan perl script
-        if "seq_region_name" in res:
-            gen_chr = res["seq_region_name"]
-        elif "colocated_variants" in res:
-            gen_chr = res["colocated_variants"][0]["seq_region_name"]
-        else:
-            gen_chr = "un"
+        gen_start, gen_chr = get_gen(res)
     except Exception as e:
         print("Could not retrieve some needed location information: ", e)
 
@@ -1284,12 +1285,14 @@ def get_output_list_pt2(res, hgvs, wt="", mut="", transcript=""):
         print("Could not retrieve amino acid change: ", e)
 
     # create gnomad variant string
-    gnomad_variant = ""
-    if gen_chr and gen_start and len(splice_wt) != 0 and len(splice_mut) != 0:
-        gnomad_variant = "{}-{}-{}-{}".format(gen_chr, str(int(gen_start) + 1), splice_wt, splice_mut)
+    gnomad_variant = get_gnomad_variant(gen_chr, gen_start, splice_wt, splice_mut)
 
-    # TODO: fix requests here
+    # TODO: collect all entries here again, and run reqs together (thread this later)
+    # idea: make all inputs necessary for determine_impacts as a dictionary for each entry in list
+    # TODO: Then run determine impacts separately (also threaded)
+
     # # get spliceai prediction from spliceai-lookup and mes scores
+    # compute: gnomad_variant, gen_start, gen_chr, strand, indel_length, indel_bp
     spliceai_pred = spliceai(gnomad_variant)
     mes_dict_5 = mes5_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
     mes_dict_3 = mes3_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
@@ -1332,6 +1335,290 @@ def get_output_list_pt2(res, hgvs, wt="", mut="", transcript=""):
         "cdna": cdna
     }
     return d
+
+def get_gen(res):
+    gen_start = res["start"]
+    gen_start = str(int(gen_start) - 1)  # Adjust for maxentscan perl script
+    if "seq_region_name" in res:
+        gen_chr = res["seq_region_name"]
+    elif "colocated_variants" in res:
+        gen_chr = res["colocated_variants"][0]["seq_region_name"]
+    else:
+        gen_chr = "un"
+    return gen_start, gen_chr
+
+def get_gnomad_variant(gen_chr, gen_start, splice_wt, splice_mut):
+    # create gnomad variant string
+    gnomad_variant = ""
+    if gen_chr and gen_start and len(splice_wt) != 0 and len(splice_mut) != 0:
+        gnomad_variant = "{}-{}-{}-{}".format(gen_chr, str(int(gen_start) + 1), splice_wt, splice_mut)
+    return gnomad_variant
+
+# temporarily refactor parts of get_output that creates all inputs necessary for determine_impacts
+# returns as a dictionary for each entry in list
+def tmp_for_determine_impacts(res, hgvs, wt="", mut="", transcript=""):
+    # adjust for strand (check if negative?)
+    strand, indel_length, indel_bp = 1, 0, ""
+    for key in res: # check if strand is menioned in the dict
+        # print(key, res[key])
+        if (key == "strand" or "strand" in key) and (res[key] == -1): # check
+            strand = -1
+        if "del" in hgvs and (key == "allele_string" or "allele_string" in key):
+            indel_info = res[key].strip().split("/")
+            indel_length, indel_bp = len(indel_info[0]), str(indel_info[0])
+        elif "ins" in hgvs and (key == "allele_string" or "allele_string" in key):
+            indel_info = res[key].strip().split("/")
+            indel_length, indel_bp = len(indel_info[1]), str(indel_info[1])
+        elif "dup" in hgvs and (key == "allele_string" or "allele_string" in key):
+            indel_info = res[key].strip().split("/")
+            indel_length, indel_bp = len(indel_info[1]), str(indel_info[1])
+    if strand == -1 and len(wt) != 0 and len(mut) != 0:
+        splice_wt, splice_mut = nucleotide_change[wt], nucleotide_change[mut]
+    else:
+        splice_wt, splice_mut = wt, mut
+
+    # find SIFT and Polyphen scores
+    try:
+        sift_score = [False]
+        for item in res["transcript_consequences"]:
+            if "sift_score" in item:
+                sift_score = item["sift_score"]
+                break
+    except Exception as e:
+        print("Could not retrieve sift_score: ", e)
+        sift_score = [False]
+    try:
+        polyphen_score = [False]
+        for item in res["transcript_consequences"]:
+            if "polyphen_score" in item:
+                polyphen_score = item["polyphen_score"]
+                break
+    except Exception as e:
+        print("Could not retrieve polyphen_score: ", e)
+        polyphen_score = [False]
+
+    # find CADD score
+    try:
+        cadd_score = [False]
+        for item in res["transcript_consequences"]:
+            if "cadd_phred" in item:
+                cadd_score = item["cadd_phred"]
+                break
+    except Exception as e:
+        print("Could not retrieve cadd_score: ", e)
+        cadd_score = [False]
+
+    # find these scores (maxentscan, spliceAI)
+    try:
+        maxentscan_ref, ref_found = [False], False
+        maxentscan_alt, alt_found = [False], False
+        maxentscan_diff, diff_found = [False], False
+        spliceai_pred, pred_found = [False], False
+        for item in res["transcript_consequences"]:
+            if "maxentscan_ref" in item and not ref_found:
+                maxentscan_ref = item["maxentscan_ref"]
+                ref_found = True
+            if "maxentscan_alt" in item and not alt_found:
+                maxentscan_alt = item["maxentscan_alt"]
+                alt_found = True
+            if "maxentscan_diff" in item and not diff_found:
+                maxentscan_diff = item["maxentscan_diff"]
+                diff_found = True
+            if "spliceai_pred" in item and not pred_found:
+                spliceai_pred = item["spliceai_pred"]
+                pred_found = True
+    except Exception as e:
+        print("Could not retrieve some MES score: ", e)
+
+    # look for start and chr of mutation
+    try:
+        gen_start, gen_chr = get_gen(res)
+    except Exception as e:
+        print("Could not retrieve some needed location information: ", e)
+
+    # look for most severe consequence
+    try:
+        consequence = "Not found"
+        if "most_severe_consequence" in res:
+            consequence = res["most_severe_consequence"]
+    except Exception as e:
+        print("Could not retrieve most severe consequence: ", e)
+
+    # look for amino acid change
+    try:
+        aa_change, codons, cdna = "Not found", "not found", "Not found"
+        for item in res["transcript_consequences"]:
+            if "amino_acids" in item:
+                aa_change = item["amino_acids"]
+            if "codons" in item:
+                codons = item["codons"]
+            if "cdna_start" in item:
+                cdna = item["cdna_start"]
+    except Exception as e:
+        print("Could not retrieve amino acid change: ", e)
+
+    # create gnomad variant string
+    gnomad_variant = get_gnomad_variant(gen_chr, gen_start, splice_wt, splice_mut)
+
+    # return as dictionary for predictions
+    var_dict = {"gnomad_variant": gnomad_variant,
+                 "gen_start": gen_start,
+                 "gen_chr": gen_chr,
+                 "mut": mut,
+                 "strand": strand,
+                 "hgvs": hgvs,
+                 "consequence": consequence,
+                 "indel_length": indel_length,
+                 "indel_bp": indel_bp,
+                 "sift_score": sift_score,
+                 "polyphen_score": polyphen_score,
+                 "maxentscan_ref": maxentscan_ref,
+                 "maxentscan_alt": maxentscan_alt,
+                 "maxentscan_diff": maxentscan_diff}
+
+    return var_dict
+
+    # Determine if this mutation is amenable
+    coding_impact, splicing_impact, consequence, mes_analyses, spliceai_analyses = determine_impacts(gen_chr, gen_start,
+                                                                                                     hgvs, consequence,
+                                                                                                     sift_score,
+                                                                                                     polyphen_score,
+                                                                                                     maxentscan_ref,
+                                                                                                     maxentscan_alt,
+                                                                                                     maxentscan_diff,
+                                                                                                     spliceai_pred,
+                                                                                                     mes_dict_5,
+                                                                                                     mes_dict_3, strand)
+
+    # IMPT:
+    # mes_analyses is a dictionary that maps key: "key,ref,alt,delta" to a tuple value: (x, y, z) where x=high/moderate/low prob, y=donor/acceptor, z=weakened/strengthened
+    # spliceai_analyses is a dictionary that maps key: "pos_delta,prob_delta" to a tuple value: (x, y), where x=acceptor/donor, y=loss/gain
+    print(mes_analyses, spliceai_analyses)
+
+    aso_prediction = determine_amenability(mes_analyses, spliceai_analyses, hgvs, consequence, sift_score,
+                                           polyphen_score, strand)
+
+    d = {
+        "aso_prediction": aso_prediction,
+        "coding_impact": coding_impact,
+        "splicing_impact": splicing_impact,
+        "sift_score": sift_score,
+        "polyphen_score": polyphen_score,
+        "maxentscan_ref": maxentscan_ref,
+        "maxentscan_alt": maxentscan_alt,
+        "maxentscan_diff": maxentscan_diff,
+        "spliceai_pred": spliceai_pred,
+        "gnomad_variant": gnomad_variant,
+        "cadd_score": cadd_score,
+        "strand": str(strand),
+        "aa_change": aa_change,
+        "codons": codons,
+        "cdna": cdna
+    }
+    return d
+
+
+def tmp_predict(variants):
+    # # get spliceai prediction from spliceai-lookup and mes scores
+    # compute: gnomad_variant, gen_start, gen_chr, strand, indel_length, indel_bp
+    spliceai_pred = list_spliceai(variants)
+    mes_dict_5 = mes5_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
+    mes_dict_3 = mes3_runner(gen_start, gen_chr, mut, strand, hgvs, indel_length, indel_bp)
+
+def list_mes5_runner(variants):
+    # run 5' maxentscan
+    mes_dict_5 = {}
+    mes5lowdiff, mes5highdiff = 13, 19  # THESE VALUES WERE DETERMINED THROUGH TRIAL AND ERROR
+    if strand == -1:
+        mes5lowdiff, mes5highdiff = mes5highdiff - 1, mes5lowdiff + 1
+
+    mes5highdiff += indel_length
+    try:
+        mes5low = str(int(gen_start) - mes5lowdiff)
+        mes5high = str(int(gen_start) + mes5highdiff)
+        # mes5range = "chr{}:{}-{}".format(gen_chr, mes5low, mes5high)
+        try:
+            server = "http://api.genome.ucsc.edu"
+            get = "/getData/sequence"
+            params = {"chrom": "chr{}".format(gen_chr), "genome": "hg38", "start": mes5low, "end": mes5high}
+            r = requests.get(server + get, params=params, headers={"Content-Type": "application/json"}, verify=True)
+            if not r.ok:
+                r.raise_for_status()
+                return {}
+            decoded = r.json()
+            res_sequence = decoded["dna"]
+        except Exception as e:
+            print("Could not retrieve sequence from UCSC: ", e)
+            return {}
+        if res_sequence:
+            if strand == -1:
+                new_res_sequence = ""
+                for char in res_sequence[::-1].strip():
+                    new_res_sequence += nucleotide_change[char]
+                seq9wt = new_res_sequence[0:31].lower()
+                mes5lowdiff, mes5highdiff = mes5highdiff - 1, mes5lowdiff + 1
+                res_sequence = new_res_sequence
+            else:
+                seq9wt = res_sequence[0:31].lower()
+
+            if "del" in hgvs:
+                seq9mut = "{}{}".format(res_sequence[0:mes5lowdiff],
+                                        res_sequence[mes5lowdiff + indel_length:len(res_sequence) - 1]).lower()
+            elif "ins" in hgvs:
+                seq9wt += res_sequence[31:31 + indel_length].lower()
+                seq9mut = "{}{}{}".format(res_sequence[0:mes5lowdiff], indel_bp, res_sequence[
+                                                                                 mes5lowdiff:mes5lowdiff + mes5highdiff - len(
+                                                                                     indel_bp) - 1]).lower()
+            elif "dup" in hgvs:
+                seq9wt += res_sequence[31:31 + indel_length].lower()
+                seq9mut = "{}{}{}".format(res_sequence[0:mes5lowdiff], indel_bp, res_sequence[
+                                                                                 mes5lowdiff:mes5lowdiff + mes5highdiff - len(
+                                                                                     indel_bp) - 1]).lower()
+            else:
+                seq9mut = "{}{}{}".format(seq9wt[0:mes5lowdiff], mut,
+                                          seq9wt[mes5lowdiff + 1:mes5lowdiff + mes5highdiff]).lower()
+            # print(res_sequence.lower(), mes5lowdiff, mes5highdiff, indel_length, indel_bp)
+            # print(seq9wt, len(seq9wt))
+            # print(seq9mut, len(seq9mut), "\n")
+            return create_mes_dict(seq9wt, seq9mut, 5, strand)
+        else:
+            print("Something went wrong with 5' maxentscan. Please re-enter your coordinates.")
+            return {}
+    except Exception as e:
+        print("Could not run 5' maxentscan: ", e)
+        wt5mes = [False]
+        mut5mes = [False]
+        return {}
+
+
+
+# read in the list of dictionaries, return the list of spliceai preds
+def list_spliceai(variants):
+    try:
+        # Retrieve PubMed IDs
+        server = "https://spliceailookup-api.broadinstitute.org/"
+        get = "spliceai/"
+        # params = {"hg": 38, "distance": 50, "variant": v["gnomad_variant"]}  # change to 5000 for ATM project
+        rs = (grequests.get(server + get, params={"hg": 38, "distance": 50, "variant": v["gnomad_variant"]},
+                            headers={"Content-Type": "application/json"}, verify=False) for v in variants)
+        # if not r.ok:
+        #     r.raise_for_status()
+        #     return None
+        resps = grequests.map(rs, size=15)
+        # return list of strings of scores
+        res = [str(resp.json()["scores"][0]) for resp in resps]
+        return res
+    except Exception as e:
+        print(e)
+        return []
+
+
+
+    # if not r.ok:
+    #     r.raise_for_status()
+    #     return None
+
+
 
 
 def main():

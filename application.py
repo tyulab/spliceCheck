@@ -236,9 +236,10 @@ def getOutputList2():
             wt_list.append(wt)
             mut_list.append(mut)
 
-    # for all input ready to execute, run get_output_list
+    # for all input ready to execute, run get_output_list, return the dictionary of results for each variant
     output_res = get_output_list(hgvs_list, wt_list, mut_list)
-
+    # TODO: output to text file (and save internally?)
+    # TODO: Make it look better as a table
     for i, result in enumerate(output_res):
         if not result:
             scores.append((hgvs_list[i],
