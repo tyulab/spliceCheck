@@ -1,8 +1,9 @@
 import os
 import asyncio
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, session, send_file
+from flask import Flask, flash, jsonify, redirect, render_template, request, session, send_file, Response, make_response
 import os
+import pandas as pd
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
@@ -12,6 +13,7 @@ from helpers import apology
 
 # Configure application
 application = app = Flask(__name__)
+app.secret_key = '84e1a45ba1acb48d7d7c988329bcf07ab303b3a85e68889cc54b7cbd049b272922d3857f8deebfcd1ea7'
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -252,10 +254,18 @@ def getOutputList2():
                 result["maxentscan_ref"], result["maxentscan_alt"], result["maxentscan_diff"], result["spliceai_pred"],
                 result["gnomad_variant"])
             scores.append((hgvs_list[i], str_result))
-
+    session['scores'] = scores
     return render_template("outputFile.html", vep_output=scores)
 
-
+@app.route('/export.csv')
+def download_csv():
+    scores = session['scores']
+    df = pd.DataFrame(scores)
+    return Response(
+        df.to_csv(index=False, header=False),
+        mimetype="text/csv",
+        headers={"Content-disposition":
+                     "attachment; filename=export.csv"})
 
 if __name__ == "__main__":
     # context = ('server.crt', 'privatekey.pem')  # certificate and key files
