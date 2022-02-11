@@ -10,6 +10,8 @@ from werkzeug.exceptions import default_exceptions, HTTPException, InternalServe
 from werkzeug.security import check_password_hash, generate_password_hash
 from spliceCheck_new2 import *
 from helpers import apology
+from datetime import datetime
+
 
 # Configure application
 application = app = Flask(__name__)
@@ -255,17 +257,43 @@ def getOutputList2():
                 result["gnomad_variant"])
             scores.append((hgvs_list[i], str_result))
     session['scores'] = scores
+    # todo: log
+    # df = format_csv(scores)
+
     return render_template("outputFile.html", vep_output=scores)
 
 @app.route('/export.csv')
 def download_csv():
     scores = session['scores']
-    df = pd.DataFrame(scores)
+    df = format_csv(scores)
+    print(df)
     return Response(
-        df.to_csv(index=False, header=False),
+        # df.to_csv(index=False, header=False),
+        df.to_csv(index=False, header=True),
         mimetype="text/csv",
         headers={"Content-disposition":
                      "attachment; filename=export.csv"})
+
+# download logs of last queries
+@app.route('/log.csv')
+def download_log():
+    # just return the log
+    return Response("output/log.csv", mimetype="text/csv", headers={"Content-disposition": "attachment; filename=export.csv"})
+
+# helper function to make csv from list of lists
+def format_csv(scores):
+    # Returns a datetime object containing the local date and time
+    dateTimeObj = datetime.now()
+    timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S)")
+    # reformat list of lists
+    new_scores = []
+    for tup in scores:
+        # remove the carriage returns...
+        # row = [tup[0].strip()] + [x.strip() for x in tup[1].split('|')] + [timestampStr]
+        row = [tup[0].strip()] + [x.split(":")[1] for x in tup[1].split(' | ')] + [timestampStr]
+        new_scores.append(row)
+    df = pd.DataFrame(new_scores, columns=['Variant', 'Coding Impact', 'Splicing Impact', 'SIFT', 'Polyphen', 'VEP MaxEntScan Ref', 'VEP MaxEntScan Alt','VEP MaxEntScan Diff','SpliceAI','gnomad_variant','Time'])
+    return df
 
 if __name__ == "__main__":
     # context = ('server.crt', 'privatekey.pem')  # certificate and key files
