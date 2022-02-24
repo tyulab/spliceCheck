@@ -12,7 +12,7 @@ from spliceCheck_new2 import *
 from helpers import apology
 from datetime import datetime
 from gevent import monkey
-monkey.patch_all()
+
 
 # Configure application
 application = app = Flask(__name__)
@@ -308,7 +308,9 @@ def format_csv(scores):
 
 if __name__ == "__main__":
     # context = ('server.crt', 'privatekey.pem')  # certificate and key files
+    monkey.patch_all()
     app.run(debug=True)
+
     # app.run(debug=True, port=443)
     # app.run(debug=True, ssl_context=context)
     # https://stackoverflow.com/questions/47108504/flask-default-port-number
