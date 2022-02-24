@@ -13,4 +13,5 @@ The output page will give you links to information about the gene
 and mutation as well as a prediction of whether or not it could be treated with antisense oligonucleotide
 gene therapy.
 
-#### [(current test version)](http://splicecheck.us-east-1.elasticbeanstalk.com/)
+## [Current test version](http://splicecheck.us-east-1.elasticbeanstalk.com/)
+

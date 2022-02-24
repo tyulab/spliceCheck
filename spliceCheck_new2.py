@@ -1,6 +1,5 @@
 import os
 import grequests
-# TODO; TEST
 # from gevent import monkey as curious_george
 # curious_george.patch_all(thread=False, select=False)
 import requests
@@ -1137,7 +1136,7 @@ def get_clinvar(hgvs):
 # ensemblID: ENST00000379996 for cdkl5
 # get output given list of hgvs, wts, muts, transcript (?)
 def get_output_list(hgvs, wt="", mut="", transcript=""):
-    # clear carriage returns
+    # clear carriage returns in case
     hgvs = [i.strip() for i in hgvs]
     if wt == "":
         wt = [""] * len(hgvs)
@@ -1145,16 +1144,26 @@ def get_output_list(hgvs, wt="", mut="", transcript=""):
         mut = [""] * len(hgvs)
     if transcript == "":
         transcript = [""] * len(hgvs)
+    # hgvs = list(zip(hgvs, transcript))
     """Call tools to get output"""
     # Run VEP on the variant
     try:
         server = "http://rest.ensembl.org"
         get = "/vep/human/hgvs/"
         params = {"SpliceAI": True, "MaxEntScan": True, "CADD": True}
-        if transcript:
-            params["transcript_id"] = transcript
+        # if transcript:
+        #     params["transcript_id"] = transcript
         # NOTE!!!: limit on requests is 15
-        rs = (grequests.get(server + get + h, params=params, headers={"Content-Type": "application/json"}, verify=False) for h in hgvs)
+        rs = []
+        for h in list(zip(hgvs, transcript)):
+            params = {"SpliceAI": True, "MaxEntScan": True, "CADD": True}
+            if h[1] == "":
+                rs.append(grequests.get(server+get+h[0], params=params, headers={"Content-Type": "application/json"}, verify=False))
+            else:
+                rs.append(grequests.get(server+get+h[0], params=params.update({"transcript_id": h[1]}), headers={"Content-Type": "application/json"}, verify=False))
+        rs = tuple(rs)
+        # rs = (grequests.get(server + get + h[0], params=params.update({"transcript_id": h[1]}), headers={"Content-Type": "application/json"}, verify=False) for h in hgvs)
+        # rs = (grequests.get(server + get + h[0], params=params, headers={"Content-Type": "application/json"}, verify=False) for h in hgvs)
         # if not r.ok:
         #     r.raise_for_status()
         #     return None

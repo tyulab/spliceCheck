@@ -11,7 +11,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from spliceCheck_new2 import *
 from helpers import apology
 from datetime import datetime
-
+from gevent import monkey
+monkey.patch_all()
 
 # Configure application
 application = app = Flask(__name__)
@@ -190,13 +191,23 @@ def getOutput():
 
 # need to fix
 @app.route("/outputFile", methods=["POST"])
-def getOutputList2():
+def getOutputList():
     # Get user input from form
     file = request.files["file"]
     file.seek(0)
     contents = file.read().decode("utf-8")
-    # separate variant by line
-    variant_list = contents.strip().split("\n")
+    # separate variant by lines and use transcript
+    contents = contents.splitlines()
+    variant_list = []
+    transcript_list = []
+    for content in contents:
+        variant = content.split(" ")[0]
+        if len(variant) == len(content):
+            transcript = ""
+        else:
+            transcript = content.split(" ")[1]
+        variant_list.append(variant)
+        transcript_list.append(transcript)
 
     # initialize list of results to value "0"
     res = ["0" for _ in range(len(variant_list))]
@@ -241,8 +252,8 @@ def getOutputList2():
             mut_list.append(mut)
 
     # for all input ready to execute, run get_output_list
-    output_res = get_output_list(hgvs_list, wt_list, mut_list)
-
+    output_res = get_output_list(hgvs_list, wt_list, mut_list, transcript_list)
+    # todo: check that output_res not none
     for i, result in enumerate(output_res):
         if not result:
             scores.append((hgvs_list[i],
