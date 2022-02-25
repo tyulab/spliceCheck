@@ -1,6 +1,6 @@
 #### keep if debugging locally, else comment out these lines when pushing
-from gevent import monkey
-monkey.patch_all()
+# from gevent import monkey
+# monkey.patch_all()
 #################
 
 import asyncio
