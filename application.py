@@ -1,20 +1,29 @@
-import os
-import asyncio
+#### keep if debugging locally, else comment out these lines when pushing
+# from gevent import monkey
+# monkey.patch_all()
+#################
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, session, send_file
+import asyncio
+from flask import Flask, flash, jsonify, redirect, render_template, request, session, send_file, send_from_directory, Response, make_response
 import os
-from flask_session import Session
-from tempfile import mkdtemp
+from os.path import exists
+import pandas as pd
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
-from spliceCheck_new2 import *
+from spliceCheck import *
 from helpers import apology
+from datetime import datetime
+import config
+import csv
+
 
 # Configure application
 application = app = Flask(__name__)
+app.secret_key = config.SECRET_KEY
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config.from_object('config')
 
 
 # Ensure responses aren't cached
@@ -25,13 +34,6 @@ def after_request(response):
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
     return response
-
-
-# Configure session to use filesystem (instead of signed cookies)
-# app.config["SESSION_FILE_DIR"] = mkdtemp()
-# app.config["SESSION_PERMANENT"] = False
-# app.config["SESSION_TYPE"] = "filesystem"
-# Session(app)
 
 @app.route("/")
 def index():
@@ -85,7 +87,7 @@ def getOutput():
     else:
         hgvs = "{}:{}{}>{}".format(gene.upper(), cdna, wt, mut)
 
-    # # THIS IS WHERE GET_OUTPUT IN spliceCheck_new.py CAN BE CALLED#####################
+    ### Where get_output in spliceCheck_new.py is called ###
     res = get_output(hgvs, wt, mut, transcript)
     if not res:
         return apology("I could not check to see if the mutation is amenable. Please wait ")
@@ -138,61 +140,25 @@ def getOutput():
 
 # wt5=res["wt5mes"], wt3=res["wt3mes"], mut5=res["mut5mes"], mut3=res["mut3mes"])
 
-# def getOutputList():
-#     # Get user input from form
-#     file = request.files["file"]
-#     file.seek(0)
-#     contents = file.read().decode("utf-8")
-#     variant_list = contents.strip().split("\n")
-#     scores = []
-#     for hgvs in variant_list:
-#         res = "0"
-#
-#         # input checking
-#         hgvs_comps = hgvs.strip().split(">")
-#         if len(hgvs_comps) == 2:
-#             wt, mut = hgvs_comps[0][-1], hgvs_comps[1].strip()
-#             cdna = hgvs_comps[0][0:-1]
-#             if len(cdna.strip().split(":")) != 2:
-#                 res = "1"
-#             elif cdna.strip().split(".")[0][-1] != "c":
-#                 res = "1"
-#             if str(wt) == str(mut):
-#                 res = "1"
-#         elif len(hgvs_comps) == 1:   # insertions/deletions/duplications - frameshift
-#             wt, mut = "", ""
-#             if len(hgvs_comps[0].strip().split(":")) != 2:
-#                 res = "1"
-#             elif hgvs_comps[0].strip().split(".")[0][-1] != "c":
-#                 res = "1"
-#             elif "dup" not in hgvs and "del" not in hgvs and "ins" not in hgvs:
-#                 res = "1"
-#         else:
-#             res = "1"
-#
-#         if res == "1":
-#             scores.append((hgvs, "Please double check that the mutation was inputted correctly."))
-#         else:
-#             res = get_output(hgvs, wt, mut)
-#             if not res:
-#                 scores.append((hgvs, "Could not run VEP on this variant. Please double check that the mutation was inputted correctly."))
-#             else:
-#                 for key in res: # change [False] to "None found"
-#                     if type(res[key]) is list:
-#                         res[key] = "None found."
-#                 str_result = "coding_impact: {} | splicing_impact: {} | SIFT: {} | PolyPhen: {} | VEP MaxEntScan Ref: {} | VEP MaxEntScan Alt: {} | VEP MaxEntScan Diff: {} | SpliceAI: {} | gnomad_variant: {} ".format(res["coding_impact"], res["splicing_impact"], res["sift_score"], res["polyphen_score"], res["maxentscan_ref"], res["maxentscan_alt"], res["maxentscan_diff"], res["spliceai_pred"], res["gnomad_variant"])
-#                 scores.append((hgvs, str_result))
-#     return render_template("outputFile.html", vep_output=scores)
-
 # need to fix
 @app.route("/outputFile", methods=["POST"])
-def getOutputList2():
+def getOutputList():
     # Get user input from form
     file = request.files["file"]
     file.seek(0)
     contents = file.read().decode("utf-8")
-    # separate variant by line
-    variant_list = contents.strip().split("\n")
+    # separate variant by lines and use transcript
+    contents = contents.splitlines()
+    variant_list = []
+    transcript_list = []
+    for content in contents:
+        variant = content.split(" ")[0]
+        if len(variant) == len(content):
+            transcript = ""
+        else:
+            transcript = content.split(" ")[1]
+        variant_list.append(variant)
+        transcript_list.append(transcript)
 
     # initialize list of results to value "0"
     res = ["0" for _ in range(len(variant_list))]
@@ -237,8 +203,8 @@ def getOutputList2():
             mut_list.append(mut)
 
     # for all input ready to execute, run get_output_list
-    output_res = get_output_list(hgvs_list, wt_list, mut_list)
-
+    output_res = get_output_list(hgvs_list, wt_list, mut_list, transcript_list)
+    # todo: check that output_res not none
     for i, result in enumerate(output_res):
         if not result:
             scores.append((hgvs_list[i],
@@ -252,14 +218,66 @@ def getOutputList2():
                 result["maxentscan_ref"], result["maxentscan_alt"], result["maxentscan_diff"], result["spliceai_pred"],
                 result["gnomad_variant"])
             scores.append((hgvs_list[i], str_result))
+    session['scores'] = scores
+    # todo: log
+    # check stdout.log for exception
+    try:
+        df = format_csv(scores) # make csv of current scores
+        lines = 0
+        if exists(app.config["LOG"]):
+            with open(app.config["LOG"], 'a+') as f:
+                f.seek(0,2)
+                # f.write('\n') # don't need
+                f.seek(0)
+                reader = csv.reader(f)
+                lines = len(list(reader)) # count lines
+        if not exists(app.config["LOG"]) or lines > app.config["MAX_OUTPUT_LINES"]: # if exceeds max lines or doesn't exist make new file
+            df.to_csv(app.config["LOG"], index=False, header=True)
+        else: # else append to old one
+            df.to_csv(app.config["LOG"], index=False, header=False, mode='a')
+    except Exception as e:
+        print(e)
 
     return render_template("outputFile.html", vep_output=scores)
 
+@app.route('/export.csv')
+def download_csv():
+    scores = session['scores']
+    df = format_csv(scores)
+    print(df)
+    return Response(
+        # df.to_csv(index=False, header=False),
+        df.to_csv(index=False, header=True),
+        mimetype="text/csv",
+        headers={"Content-disposition":
+                     "attachment; filename=export.csv"})
 
+# download logs of last queries. no link for it, call it directly
+@app.route('/log.csv')
+def download_log():
+    # just return the log
+    return send_from_directory(directory=app.root_path, path=app.config["LOG"])
+    # return Response("output/log.csv", mimetype="text/csv", headers={"Content-disposition": "attachment; filename=log.csv"})
+
+# helper function to make csv from list of lists
+def format_csv(scores):
+    # Returns a datetime object containing the local date and time
+    dateTimeObj = datetime.now()
+    timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S)")
+    # reformat list of lists
+    new_scores = []
+    for tup in scores:
+        # remove the carriage returns...
+        # row = [tup[0].strip()] + [x.strip() for x in tup[1].split('|')] + [timestampStr]
+        row = [tup[0].strip()] + [x.split(":")[1] for x in tup[1].split(' | ')] + [timestampStr, app.config["VERSION"]]
+        new_scores.append(row)
+    df = pd.DataFrame(new_scores, columns=['Variant', 'Coding Impact', 'Splicing Impact', 'SIFT', 'Polyphen', 'VEP MaxEntScan Ref', 'VEP MaxEntScan Alt','VEP MaxEntScan Diff','SpliceAI','gnomad_variant','Date','Version'])
+    return df
 
 if __name__ == "__main__":
     # context = ('server.crt', 'privatekey.pem')  # certificate and key files
     app.run(debug=True)
+
     # app.run(debug=True, port=443)
     # app.run(debug=True, ssl_context=context)
     # https://stackoverflow.com/questions/47108504/flask-default-port-number

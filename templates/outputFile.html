@@ -6,7 +6,12 @@
 
 {% block main %}
   <h1>Results</h1>
+
   <div class="jumbotron">
+	  <div>
+		<a href="/export.csv" target="blank" role="button"><button class='btn btn-primary'>Download</button></a>
+	  </div>
+
 	  <div class = "wrapper" style="max-width: 60rem; display: inline-block;">
 	    <!-- Table with VEP output -->
 	    <div class="card border-secondary mb-3" style="width:50rem;">
@@ -24,6 +29,7 @@
 	      </div>
 	    </div>
   </div>
+
 {% endblock %}
 
 
