@@ -15,11 +15,11 @@ gene therapy.
 <hr>
 
 # [Current testing version](http://splicecheck.us-east-1.elasticbeanstalk.com/)
-
+[Guide to run on AWS/Gcloud](https://docs.google.com/document/d/1ijEJmNgZd87NRikdMadduFzMLSa0dg7IRF9-3Kveqh8/edit?usp=sharing)
 #### Recently added:
 - Pass transcript ID into list search
 - Change version number in config file
-- [download the log](https://splicecheck.us-east-1.elasticbeanstalk.com/log.csv) and set max lines in log
+- [download the log](http://splicecheck.us-east-1.elasticbeanstalk.com/log.csv) and set max lines in log
 #### Features to add:
 - Save output to database
     - What type of database? How will it be accessed? Where can it be stored?
