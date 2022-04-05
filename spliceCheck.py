@@ -1565,7 +1565,7 @@ def main():
 	# tup2 = get_output("ALS2:c.2581-1G>C", "G", "C")
 	tup2 = get_output("ATM:c.8500T>A", "T", "A")
 
-	print(tup2)
+	#print(tup2)
 
 	# variants = [
 	# ("ATM:c.7865C>T", "C", "T"),
