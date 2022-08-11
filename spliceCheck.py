@@ -1992,7 +1992,7 @@ def main():
     # tup2 = get_output("MGP:c.94+1G>A", "G", "A")
     # tup2 = get_output("ABCA4:c.5461-10T>C", "T", "C")
     tup2 = get_output("ATM:c.7865C>T", "C", "T")
-    print(tup2)
+    #print(tup2)
 
 
 if __name__ == "__main__":
