@@ -1,5 +1,0 @@
-do{ my $x = {
-  'hts_include' => '/home/ubuntu/workspace/final/tools/ensembl-vep/htslib/htslib',
-  'hts_lib' => '/home/ubuntu/workspace/final/tools/ensembl-vep/htslib'
-};
-$x; }
